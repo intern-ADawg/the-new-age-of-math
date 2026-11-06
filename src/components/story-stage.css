@@ -1,0 +1,123 @@
+/* Stick-figure story stage — ported from math-builder case_stage */
+:root, .mb-video {
+  --mb-shadow-up: var(--shadow-up);
+  --mb-tint: var(--tint);
+  --mb-tint-2: var(--tint-2);
+  --mb-ring: var(--ring);
+}
+.mb-ctl {
+  cursor: pointer;
+  font-family: inherit;
+}
+/* ---- Story videos (templates/case_stage.js) ---- */
+.mb-text-hidden .mb-story-text{display:none}
+.mb-story{margin:4px 0 22px}
+.mb-video{border-radius:20px;overflow:hidden;background:#fff;border:1px solid var(--line);box-shadow:var(--mb-shadow-up)}
+.mb-screen{position:relative;background:#eef0ff}
+.mb-svg{display:block;width:100%;height:auto}
+.mb-caption{min-height:92px;padding:16px 22px 14px;background:#fff;border-top:1px solid var(--line);font-size:1.05rem;line-height:1.55;color:#262a40}
+.mb-caption span{display:inline-block;opacity:0;transform:translateY(4px);animation:mb-word .35s ease forwards}
+.mb-cap-kicker{display:block!important;opacity:1!important;transform:none!important;animation:none!important;font-size:.72rem;font-weight:800;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--navy);margin-bottom:4px}
+.mb-bigplay{position:absolute;left:0;right:0;top:0;bottom:92px;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  border:none;border-radius:0;background:radial-gradient(circle at 50% 45%,rgba(49,46,129,.18),rgba(49,46,129,.45));color:#fff;cursor:pointer;box-shadow:none;padding:0}
+.mb-bigplay:hover{background:radial-gradient(circle at 50% 45%,rgba(49,46,129,.12),rgba(49,46,129,.38))}
+.mb-bigplay-icon{display:grid;place-items:center;width:76px;height:76px;border-radius:50%;background:#fff;color:var(--navy);font-size:1.9rem;
+  padding-left:6px;box-shadow:0 10px 30px rgba(30,27,75,.35);transition:transform .2s}
+.mb-bigplay:hover .mb-bigplay-icon{transform:scale(1.08)}
+.mb-bigplay-label{font-weight:800;font-size:1rem;letter-spacing:.01em;text-shadow:0 1px 8px rgba(0,0,0,.35)}
+.mb-started .mb-bigplay{display:none}
+.mb-ended .mb-bigplay{display:flex}
+.mb-ended .mb-bigplay-icon{font-size:1.5rem;padding-left:0}
+.mb-controls{display:flex;align-items:center;gap:6px;padding:10px 14px;background:#fafbff;border-top:1px solid var(--line);flex-wrap:wrap}
+.mb-ctl{border:none;background:transparent;color:var(--navy-dk);font-size:1rem;padding:6px 10px;border-radius:10px;box-shadow:none;min-width:36px}
+.mb-ctl:hover{background:var(--mb-tint);transform:none}
+.mb-ctl[aria-pressed=true]{background:var(--mb-tint)}
+.mb-textbtn{font-size:.8rem;font-weight:700;color:var(--navy);border:1.5px solid #c7d2fe;margin-left:4px}
+.mb-scrub{flex:1;min-width:80px;height:8px;border-radius:999px;background:#e6e8f3;cursor:pointer;overflow:hidden}
+.mb-scrub-fill{height:100%;width:0;background:linear-gradient(90deg,#6366f1,#a855f7);border-radius:999px;transition:width .4s ease}
+.mb-voicestatus{font-size:.74rem;font-weight:700;color:var(--sub);white-space:nowrap}
+.mb-voicestatus:empty{display:none}
+.mb-count{font-size:.75rem;font-weight:700;color:var(--sub);font-variant-numeric:tabular-nums;min-width:44px;text-align:center}
+
+/* the stage: settings, props and figures switch on classes on the <svg> */
+.mb-set,.mb-actor-other,.mb-bubble,.mb-phone{display:none}
+.set-office .mb-set-office,.set-city .mb-set-city,.set-field .mb-set-field,.set-night .mb-set-night,.set-water .mb-set-water,.set-lab .mb-set-lab{display:inline}
+.has-other .mb-actor-other,.bubble-main .mb-bubble-main,.bubble-other .mb-bubble-other,.pose-phone .mb-actor-main .mb-phone{display:inline}
+.mb-wall{fill:#eef0ff}.mb-wall-lab{fill:#ecfeff}.mb-floor{fill:#dfe3f3}
+.mb-window{fill:#dbeafe;stroke:#c7d2fe;stroke-width:4}.mb-pane{stroke:#c7d2fe;stroke-width:3}
+.mb-sky{fill:#dbeafe}.mb-sun{fill:#fbbf24}.mb-cloud{fill:#fff}.mb-skyline{fill:#c7d2fe}.mb-street{fill:#cbd5e1}
+.mb-grass{fill:#86efac}.mb-tree rect{fill:#a16207}.mb-tree circle{fill:#4ade80}
+.mb-nightsky{fill:#1e1b4b}.mb-moon{fill:#fef3c7}.mb-stars{fill:#fff}.set-night .mb-skyline{fill:#312e81}.mb-lit{fill:#fde68a}
+.mb-sea{fill:#60a5fa}.mb-wave{fill:none;stroke:#eff6ff;stroke-width:3}.mb-boat path{fill:#f97316}.mb-boat line{stroke:#7c2d12;stroke-width:3}
+.mb-boat path:last-child{fill:#fff}.mb-dock{fill:#a8a29e}
+.mb-cross rect:first-child{fill:#fff}.mb-cross rect{fill:#f43f5e}.mb-shelf rect{fill:#94a3b8}.mb-shelf rect+rect{fill:#a5f3fc}
+.mb-prop{opacity:0;transition:opacity .35s}
+.prop-board .mb-prop-board,.prop-laptop .mb-prop-laptop,.prop-coins .mb-prop-coins,.prop-clock .mb-prop-clock,.prop-chart .mb-prop-chart,.prop-box .mb-prop-box{opacity:1}
+.mb-boardface{fill:#fff;stroke:#94a3b8;stroke-width:3}.mb-boardleg{stroke:#94a3b8;stroke-width:4}
+.mb-scribble path{stroke:#c7d2fe;stroke-width:5;stroke-linecap:round}.has-board-text .mb-scribble{display:none}
+.mb-boardtext{font:700 14px var(--sans);fill:#1e2235}
+.mb-desk{fill:#cbd5e1}.mb-deskleg{stroke:#94a3b8;stroke-width:4}.mb-laptopscreen{fill:#334155}.mb-laptopbase{fill:#64748b}
+.mb-cells path{stroke:#22d3ee;stroke-width:3;stroke-linecap:round}
+.mb-coinstack ellipse{fill:#fbbf24;stroke:#d97706;stroke-width:2}.mb-dollar{font:800 34px var(--sans);fill:#16a34a}
+.mb-clockface{fill:#fff;stroke:#1e2235;stroke-width:3}.mb-hourhand,.mb-minhand{stroke:#1e2235;stroke-width:3;stroke-linecap:round}
+.mb-minhand{transform-box:view-box;transform-origin:330px 62px;animation:mb-spin 6s linear infinite}
+.mb-chartbg{fill:#fff;stroke:#c7d2fe;stroke-width:3}.mb-bar1{fill:#6366f1}.mb-bar2{fill:#a855f7}.mb-bar3{fill:#f59e0b}.mb-bar4{fill:#10b981}
+.mb-bar{transform-box:fill-box;transform-origin:50% 100%}
+.mb-enter.prop-chart .mb-bar{animation:mb-grow .7s cubic-bezier(.2,.8,.2,1) both}
+.mb-crate{fill:#e7b877;stroke:#92400e;stroke-width:2.5}.mb-crateline{stroke:#92400e;stroke-width:2}
+.mb-bubble path{fill:#fff;stroke:#1e2235;stroke-width:2.5}.mb-bubble text{font:800 22px var(--sans);fill:#1e2235;text-anchor:middle}
+.mb-bubble text{animation:mb-blink 1.2s steps(2) infinite}
+
+.mb-fig line,.mb-fig path.mb-hair,.mb-fig .mb-cap{stroke:#1e2235;stroke-width:5;stroke-linecap:round;fill:none}
+.mb-fig .mb-cap{fill:#6366f1;stroke-width:3}
+.mb-actor-other .mb-fig line,.mb-actor-other .mb-hair{stroke:#4c4f6b}
+.mb-actor-other .mb-cap{fill:#f59e0b}
+.mb-head{fill:#fff;stroke:#1e2235;stroke-width:5}.mb-actor-other .mb-head{stroke:#4c4f6b}
+.mb-hand{fill:#1e2235}.mb-hairfill{fill:#1e2235}.mb-glass{fill:none;stroke:#1e2235;stroke-width:2!important}
+.mb-eye{fill:#1e2235}.mb-mouth{fill:none;stroke:#1e2235;stroke-width:2.2;stroke-linecap:round}
+.mb-frown,.mb-o{display:none}
+.mb-phone{fill:#6366f1;stroke:#1e2235;stroke-width:1.5}
+.mb-al,.mb-ar,.mb-al-2,.mb-ar-2,.mb-ll,.mb-lr,.mb-ll-2,.mb-lr-2,.mb-fig,.mb-bob{transform-box:view-box;transform-origin:0 0;
+  transition:transform .45s cubic-bezier(.3,1.3,.5,1)}
+.mb-al{transform:rotate(14deg)}.mb-al-2{transform:rotate(6deg)}.mb-ar{transform:rotate(-14deg)}.mb-ar-2{transform:rotate(-6deg)}
+.mb-ll{transform:rotate(9deg)}.mb-lr{transform:rotate(-9deg)}
+.mb-started .mb-bob{animation:mb-bob 2.6s ease-in-out infinite}
+.mb-eye{animation:mb-eyes 4s infinite}
+.pose-think .mb-actor-main .mb-ar{transform:rotate(-68deg)}.pose-think .mb-actor-main .mb-ar-2{transform:rotate(209deg)}
+.pose-phone .mb-actor-main .mb-ar{transform:rotate(-90deg)}.pose-phone .mb-actor-main .mb-ar-2{transform:rotate(252deg)}
+.pose-type .mb-actor-main .mb-ar{transform:rotate(-25deg)}.pose-type .mb-actor-main .mb-ar-2{transform:rotate(-50deg)}
+.pose-type .mb-actor-main .mb-al{transform:rotate(-12deg)}.pose-type .mb-actor-main .mb-al-2{transform:rotate(-60deg)}
+.mb-started.pose-type .mb-actor-main .mb-ar-2,.mb-started .pose-type .mb-actor-main .mb-ar-2{animation:mb-typeR .35s ease-in-out infinite alternate}
+.pose-point .mb-actor-main .mb-ar{transform:rotate(-105deg)}.pose-point .mb-actor-main .mb-ar-2{transform:rotate(-8deg)}
+.pose-worried .mb-actor-main .mb-al{transform:rotate(140deg)}.pose-worried .mb-actor-main .mb-al-2{transform:rotate(62deg)}
+.pose-worried .mb-actor-main .mb-ar{transform:rotate(-140deg)}.pose-worried .mb-actor-main .mb-ar-2{transform:rotate(-62deg)}
+.pose-worried .mb-actor-main .mb-smile{display:none}.pose-worried .mb-actor-main .mb-frown{display:inline}
+.pose-cheer .mb-actor-main .mb-al{transform:rotate(155deg)}.pose-cheer .mb-actor-main .mb-al-2{transform:rotate(10deg)}
+.pose-cheer .mb-actor-main .mb-ar{transform:rotate(-155deg)}.pose-cheer .mb-actor-main .mb-ar-2{transform:rotate(-10deg)}
+.mb-started .pose-cheer .mb-actor-main .mb-bob{animation:mb-jump .6s ease-in-out infinite alternate}
+.pose-talk .mb-actor-main .mb-ar,.has-other .mb-actor-other .mb-ar{transform:rotate(-50deg)}
+.pose-talk .mb-actor-main .mb-ar-2,.has-other .mb-actor-other .mb-ar-2{transform:rotate(-40deg)}
+.mb-started .pose-talk .mb-actor-main .mb-ar-2,.mb-started .has-other .mb-actor-other .mb-ar-2{animation:mb-gesture 1.1s ease-in-out infinite alternate}
+.pose-talk .mb-actor-main .mb-smile,.bubble-other .mb-actor-other .mb-smile{display:none}
+.pose-talk .mb-actor-main .mb-o,.bubble-other .mb-actor-other .mb-o{display:inline}
+.mb-started .pose-walk .mb-actor-main .mb-fig{animation:mb-pace 3.2s ease-in-out infinite alternate}
+.mb-started .pose-walk .mb-actor-main .mb-ll,.mb-started .pose-walk .mb-actor-main .mb-ar{animation:mb-swingA .5s ease-in-out infinite alternate}
+.mb-started .pose-walk .mb-actor-main .mb-lr,.mb-started .pose-walk .mb-actor-main .mb-al{animation:mb-swingB .5s ease-in-out infinite alternate}
+.mb-enter .mb-actor-main .mb-fig{animation:mb-in .45s ease both}
+.mb-enter .mb-prop{animation:mb-propin .5s ease both}
+@keyframes mb-word{to{opacity:1;transform:none}}
+@keyframes mb-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@keyframes mb-jump{from{transform:translateY(0)}to{transform:translateY(-14px)}}
+@keyframes mb-pace{from{transform:translateX(-50px)}to{transform:translateX(40px)}}
+@keyframes mb-swingA{from{transform:rotate(24deg)}to{transform:rotate(-24deg)}}
+@keyframes mb-swingB{from{transform:rotate(-24deg)}to{transform:rotate(24deg)}}
+@keyframes mb-typeR{from{transform:rotate(-50deg)}to{transform:rotate(-62deg)}}
+@keyframes mb-gesture{from{transform:rotate(-30deg)}to{transform:rotate(-58deg)}}
+@keyframes mb-eyes{0%,46%,50%,100%{transform:none}48%{transform:scaleY(.1)}}
+@keyframes mb-spin{to{transform:rotate(360deg)}}
+@keyframes mb-grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes mb-blink{50%{opacity:.35}}
+@keyframes mb-in{from{opacity:.2;transform:translateX(-18px)}to{opacity:1;transform:none}}
+@keyframes mb-propin{from{opacity:0;transform:translateY(8px)}}
+.mb-eye{transform-box:fill-box;transform-origin:50% 50%}

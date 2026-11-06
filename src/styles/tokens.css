@@ -1,0 +1,88 @@
+/* Design system from Math Case Study/math-builder
+   (templates/case_theme.css + app/student_portal_html.py) */
+:root {
+  --navy: #4338ca;
+  --navy-dk: #312e81;
+  --violet: #6d28d9;
+  --gold: #f59e0b;
+  --gold-lt: #fff7e6;
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --ink: #1e2235;
+  --sub: #646b80;
+  --line: #e6e8f0;
+  --ok: #0f8a5f;
+  --ok-bg: #e3f7ee;
+  --bad: #c2410c;
+  --bad-bg: #fff1e8;
+  --warn: #92400e;
+  --warn-bg: #fef3c7;
+  --tint: #eef0ff;
+  --tint-2: #f5f3ff;
+  --ring: rgba(67, 56, 202, 0.18);
+  --shadow: 0 1px 2px rgba(30, 34, 53, 0.04), 0 8px 24px rgba(30, 34, 53, 0.06);
+  --shadow-up: 0 2px 4px rgba(30, 34, 53, 0.05), 0 14px 32px rgba(30, 34, 53, 0.1);
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  --max: 1040px;
+  --case-max: 860px;
+
+  /* aliases used by existing modules */
+  --paper: var(--bg);
+  --surface: var(--card);
+  --muted: var(--sub);
+  --rule: var(--line);
+  --accent: var(--navy);
+  --accent-soft: var(--tint);
+  --flag: var(--bad);
+  --flag-soft: var(--bad-bg);
+  --ok-soft: var(--ok-bg);
+  --gold-ink: #92400e;
+  --gold-soft: var(--gold-lt);
+  --ink-soft: var(--sub);
+  --font-display: var(--sans);
+  --font-body: var(--sans);
+  --radius: 16px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 72px;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--navy);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+::selection {
+  background: #e0e7ff;
+}

@@ -1,0 +1,1334 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Study: Driving Age — Interactive</title>
+<!--
+  TEMPLATE — Math Builder interactive-case shell (A7, DOCTRINE_LEDGER MCS-37/MCS-39)
+  ============================================================================
+  Extracted from cases/cold-chain/published/Cold Chain - Interactive.html
+  (the first, hand-built case). Do NOT hand-edit this file per case — copy it
+  into cases/<id>/published/<Title> - Interactive.html and fill the
+  {{PLACEHOLDER}} tokens plus the four "CASE-SPECIFIC" marker blocks below.
+
+  Read templates/INTERACTIVE_HTML_CONTRACT.md before authoring case #2. It
+  documents: which parts of this file are load-bearing and must not change
+  (CSS custom properties, the gterm/GLOSSARY render contract T1-19 checks
+  against, the localStorage key convention), which parts are placeholders,
+  and the sensitivity_model.py <-> JS-port contract Step 3/4 calculators
+  should follow instead of hand-deriving their own tally logic.
+
+  HARD LINE (MCS-37): this shell — and any case built from it — must never
+  print a case's balance_test verdict (in-spec totals, margin, winner) as a
+  static literal anywhere outside a <script> tag. The calculator computes it
+  live from the case's own numbers; it never hands over the conclusion.
+-->
+<style>
+  /* ============================================================
+     CASE-AGNOSTIC — design system. Do not rename these custom
+     properties or class names; T1-18/T1-19 don't depend on them,
+     but every other shell convention (gterm tooltip positioning,
+     .fb.ok/.fb.bad feedback, .chk checklist rows) assumes them.
+     A case MAY retune --navy/--gold to its own palette; keep the
+     token names identical so the rest of the CSS still resolves.
+     ============================================================ */
+  :root{
+    --navy:#1a3a5c; --navy-dk:#122943; --gold:#c9a227; --gold-lt:#f7edcf;
+    --bg:#f4f6f8; --card:#ffffff; --ink:#1f2530; --sub:#5b6472; --line:#dfe4ea;
+    --ok:#1f7a4d; --ok-bg:#e6f4ec; --bad:#a3312a; --bad-bg:#fbeceb;
+    --serif:Georgia,'Times New Roman',serif; --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--serif);color:var(--ink);background:var(--bg);line-height:1.55}
+  a{color:var(--navy)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header.top{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);color:#fff;padding:34px 20px 26px;border-bottom:6px solid var(--gold)}
+  header.top .wrap{padding:0 20px}
+  header.top h1{font-size:2.1rem;margin:0 0 6px}
+  header.top .meta{font-family:var(--sans);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:#cdd9e6;opacity:.9}
+  .backlink{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:.78rem;font-weight:600;
+    color:#cdd9e6;text-decoration:none;margin-bottom:14px;opacity:.9}
+  .backlink:hover{color:#fff;opacity:1;text-decoration:underline}
+  .pillbar{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-family:var(--sans);font-size:.72rem;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:999px}
+
+  nav.tabs{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  nav.tabs .inner{max-width:960px;margin:0 auto;display:flex;overflow-x:auto;font-family:var(--sans)}
+  nav.tabs a{flex:0 0 auto;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+  nav.tabs a:hover{color:var(--navy)}
+  nav.tabs a.active{color:var(--navy);border-bottom-color:var(--gold)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:1.5rem;color:var(--navy);margin:0 0 14px;border-left:5px solid var(--gold);padding-left:12px}
+  h3{font-size:1.12rem;color:var(--navy-dk);margin:26px 0 10px}
+  p{margin:0 0 14px}
+  .lede{font-size:1.08rem}
+  blockquote{margin:16px 0;padding:10px 18px;border-left:4px solid var(--gold);background:var(--gold-lt);font-style:italic;color:#4a3f1e}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .optioncard{border:2px solid var(--line);border-radius:10px;padding:16px 18px;background:#fff;cursor:pointer;transition:.15s}
+  .optioncard:hover{border-color:var(--gold)}
+  .optioncard.picked{border-color:var(--navy);background:#eef3f8}
+  .optioncard h4{margin:0 0 8px;color:var(--navy);font-family:var(--sans)}
+  .optioncard input{margin-right:8px}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-family:var(--sans);font-size:.86rem}
+  th,td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#f7f9fb}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .hi{background:var(--gold-lt) !important}
+
+  .side-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);border-top:1px dashed var(--line);margin-top:10px;padding-top:8px}
+
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--sans);font-weight:600;color:var(--navy);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ ";color:var(--gold)}
+  details[open] summary:before{content:"▾ "}
+  details .inner{padding:0 18px 16px}
+
+  .stepbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:18px 0}
+  .stepbox h4{margin:0 0 4px;color:var(--navy);font-family:var(--sans);font-size:1rem}
+  .stepbox .goal{font-family:var(--sans);font-size:.84rem;color:var(--sub);margin-bottom:12px}
+  .fieldrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;font-family:var(--sans);font-size:.9rem}
+  .fieldrow label{min-width:220px}
+  input[type=number],input[type=text]{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;width:120px;font-size:.9rem}
+  select{font-family:var(--sans);padding:6px 8px;border:1px solid #bcc4cf;border-radius:6px;font-size:.9rem}
+  button{font-family:var(--sans);font-weight:600;font-size:.84rem;background:var(--navy);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+  button:hover{background:var(--navy-dk)}
+  button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  button.gold{background:var(--gold);color:#3a2f0c}
+  .fb{font-family:var(--sans);font-size:.84rem;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-left:6px}
+  .fb.ok{color:var(--ok);background:var(--ok-bg)}
+  .fb.bad{color:var(--bad);background:var(--bad-bg)}
+
+  .sliderow{display:flex;align-items:center;gap:14px;font-family:var(--sans);margin:14px 0}
+  input[type=range]{flex:1;accent-color:var(--navy)}
+  .sliderow .val{font-weight:700;color:var(--navy);min-width:64px;text-align:right}
+
+  .twistbox{background:#20262e;color:#f2ede0;border-radius:10px;padding:20px 22px;margin:16px 0}
+  .twistbox h4{color:var(--gold);font-family:var(--sans);margin-top:0}
+  .twistbox p{color:#e8e3d5}
+  #twistNarrative{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #444}
+  #twistNarrative p{font-style:italic}
+
+  .badge-status{font-family:var(--sans);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:5px}
+  .badge-status.spec{background:var(--ok-bg);color:var(--ok)}
+  .badge-status.exc{background:var(--bad-bg);color:var(--bad)}
+  .badge-status.unset{background:#eee;color:#888}
+
+  .chk{display:flex;gap:10px;align-items:flex-start;font-family:var(--sans);font-size:.9rem;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .chk input[type=checkbox]{margin-top:3px}
+  .chk textarea{width:100%;min-height:44px;font-family:var(--sans);font-size:.86rem;border:1px solid #bcc4cf;border-radius:6px;padding:6px 8px;margin-top:6px}
+
+  .src-list{font-family:var(--sans);font-size:.8rem;color:var(--sub)}
+  .src-list li{margin-bottom:6px}
+  footer{font-family:var(--sans);font-size:.78rem;color:var(--sub);padding:28px 0;text-align:center}
+  .toolnote{font-family:var(--sans);font-size:.78rem;color:var(--sub);background:#fbf8ee;border:1px dashed var(--gold);border-radius:8px;padding:10px 14px;margin:14px 0}
+  .progresswrap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:6px}
+  .progressbar{height:8px;border-radius:5px;background:#e4e9ee;overflow:hidden;margin-top:4px}
+  .progressbar > div{height:100%;background:var(--gold)}
+
+  .brandrow{display:flex;align-items:center;gap:14px}
+  .brandrow .logo{flex:0 0 auto}
+  .icon{width:1.05em;height:1.05em;vertical-align:-0.2em;fill:none;stroke:currentColor;stroke-width:1.6}
+  .icon.fillgold{fill:var(--gold);stroke:none}
+  th .icon{stroke:#fff}
+  .iconlabel{display:inline-flex;align-items:center;gap:6px}
+
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:10px;text-align:left}
+  .banner-art{width:100%;height:auto;display:block;border-radius:10px;margin-bottom:18px}
+  .box-compare{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;align-items:flex-end;padding:10px 0}
+  .box-compare .col{text-align:center;font-family:var(--sans)}
+  .box-compare .label{font-weight:700;color:var(--navy);margin-top:8px;font-size:.85rem}
+  .box-compare .sub{color:var(--sub);font-size:.76rem}
+
+  .chartwrap{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:16px 0}
+  .chartwrap .cap{font-family:var(--sans);font-size:.78rem;color:var(--sub);margin-top:8px}
+
+  /* ---- glossary hover + hyperlink terms — T1-19 relies on the .gterm
+         class existing literally in this file; do not rename it. ---- */
+  .gterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--gold);cursor:help;font-weight:600}
+  .gterm:hover, .gterm:focus{background:var(--gold-lt)}
+  th .gterm{color:#fff;border-bottom-color:var(--gold)}
+  th .gterm:hover, th .gterm:focus{background:rgba(255,255,255,.18)}
+  .gterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:230px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .gterm .tip .go{display:block;margin-top:6px;color:var(--gold);font-weight:700}
+  .gterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .gterm:hover .tip, .gterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+  .glossary-grid .gterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--gold);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+
+  /* ---- STORY-vocabulary hover + hyperlink terms (MCS-47/T1-21) — a
+         PARALLEL, separate mechanism from .gterm/GLOSSARY above (different
+         class, different JS object property names: desc/link, not def/url).
+         .gterm/GLOSSARY is what T1-19 (MCS-39) scans and restricts to the
+         fixed math-education ALLOWLIST_DOMAINS; these terms cite civics/
+         insurance/DMV real-world sources that are correctly NOT on that
+         allowlist, so they must never be mistaken by that checker for a
+         math-glossary entry. ---- */
+  .sterm{position:relative;color:var(--navy-dk);text-decoration:none;border-bottom:1.5px dotted var(--ok);cursor:help;font-weight:600}
+  .sterm:hover, .sterm:focus{background:var(--ok-bg)}
+  .sterm .tip{visibility:hidden;opacity:0;position:absolute;left:50%;bottom:135%;transform:translateX(-50%);
+    width:240px;background:var(--navy-dk);color:#fff;font-family:var(--sans);font-weight:400;font-size:.76rem;
+    line-height:1.4;padding:9px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:opacity .12s;z-index:30}
+  .sterm .tip .go{display:block;margin-top:6px;color:var(--ok);font-weight:700}
+  .sterm .tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dk)}
+  .sterm:hover .tip, .sterm:focus .tip{visibility:visible;opacity:1}
+  .glossary-grid .sterm{display:inline-block;background:#fff;border:1px solid var(--line);border-bottom:1.5px dotted var(--ok);
+    border-radius:999px;padding:5px 12px;font-family:var(--sans);font-size:.82rem}
+
+  .howto-list{list-style:none;margin:0;padding:0}
+  .howto-list li{margin-bottom:8px;padding-left:18px;position:relative}
+  .howto-list li:before{content:"→";position:absolute;left:0;color:var(--gold);font-weight:700}
+  .gloss-source{font-family:var(--sans);font-size:.7rem;color:#b9c3d6}
+
+  /* ============================================================
+     CASE-SPECIFIC — add here. Every case will need its own rules
+     for its banner art, its notebook layout quirks, its twist
+     visuals. Keep additions additive (new classes), don't override
+     the tokens above unless retuning the palette on purpose.
+     ============================================================ */
+  
+  .bill-excerpt{font-family:Georgia,serif;font-style:italic;background:#fbf8ee;border-left:4px solid var(--gold);
+    padding:12px 16px;margin:14px 0;color:#4a3f1e}
+  .apx-note{font-family:var(--sans);font-size:.82rem;color:var(--sub);background:#f7f9fb;
+    border:1px dashed var(--line);border-radius:8px;padding:10px 14px;margin:10px 0}
+
+
+  /* CSV export -- CASE-AGNOSTIC, added for every data table */
+  .csv-row{margin:-6px 0 14px;text-align:right;display:flex;justify-content:flex-end;gap:8px}
+  .csvbtn{font-family:var(--sans);font-weight:600;font-size:.74rem;background:#fff;color:var(--navy);
+    border:1px solid var(--navy);padding:4px 10px;border-radius:5px;cursor:pointer}
+  .csvbtn:hover{background:var(--gold-lt);border-color:var(--gold)}
+
+  /* Top-right action toolbar -- CASE-AGNOSTIC, present on every case */
+  .toolbar{position:fixed;top:14px;right:14px;z-index:40;display:flex;gap:8px;font-family:var(--sans)}
+  .toolbtn{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:600;
+    background:#fff;color:var(--navy);border:1px solid var(--line);border-radius:7px;
+    padding:7px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(20,30,50,.12)}
+  .toolbtn:hover{border-color:var(--gold);background:var(--gold-lt)}
+  .toolbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toolbtn.primary:hover{background:var(--navy-dk)}
+  .toolbtn .ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex:0 0 auto}
+  @media(max-width:720px){
+    .toolbar{position:static;justify-content:flex-end;padding:10px 20px 0;flex-wrap:wrap}
+  }
+  @media print{
+    .toolbar, nav.tabs, .csv-row, .toolnote, button{display:none !important}
+    details .inner{display:block !important}
+    summary:before{content:"" !important}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — crest + icon <defs>. The 5-icon set below
+     (truck/moto/thermo/box/drop) matched Cold Chain's own story;
+     treat it as a STARTER set, not a fixed contract — add or swap
+     <symbol> entries for what your case's diagrams actually need,
+     but keep id="ha-logo" (used in the header brandrow and footer)
+     and id="icon-check" (used by the checklist, if you wire one).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <!-- Heroes Academy crest -->
+  <symbol id="ha-logo" viewBox="0 0 64 72">
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="#12294320" stroke="#c9a227" stroke-width="2.5"/>
+    <path d="M32 2 L60 12 V34 C60 52 48 64 32 70 C16 64 4 52 4 34 V12 Z" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <path d="M32 16 c-6 0-11 5-11 12 0 9 11 20 11 20s11-11 11-20c0-7-5-12-11-12z" fill="none" stroke="#c9a227" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.4" fill="#c9a227"/>
+  </symbol>
+  <symbol id="icon-check" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></symbol>
+  <!-- starter icon set — extend/replace per case -->
+  <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h11v9H2z"/><path d="M13 10h4l4 3v2h-8z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17.5" cy="17.5" r="1.6"/></symbol>
+  <symbol id="icon-thermo" viewBox="0 0 24 24"><path d="M12 3a2 2 0 0 1 2 2v9.5a4 4 0 1 1-4 0V5a2 2 0 0 1 2-2z"/><path d="M12 8v6"/></symbol>
+  <symbol id="icon-box" viewBox="0 0 24 24"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v9l9 4 9-4V8"/><path d="M12 12v9"/></symbol>
+  
+  <symbol id="icon-gavel" viewBox="0 0 24 24"><path d="M14 4l6 6-3 3-6-6z"/><path d="M2 22l7-7"/><path d="M9 12l3 3-7 7-3-3z"/></symbol>
+  <symbol id="icon-car" viewBox="0 0 24 24"><path d="M3 13l2-6h14l2 6"/><path d="M3 13h18v5H3z"/><circle cx="7.5" cy="18" r="1.6"/><circle cx="16.5" cy="18" r="1.6"/></symbol>
+  <symbol id="icon-chart" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M11 20V4"/><path d="M18 20v-7"/><path d="M2 20h20"/></symbol>
+
+</defs>
+</svg>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — top-right action toolbar. Copy a shareable
+     link + citation, export the whole case as a PDF (via the
+     browser's own print-to-PDF), or package this Hero's own
+     notebook work + checklist notes into a printable submission
+     packet to drop in their Drive folder. No external libraries;
+     see the copyShareInfo()/exportCasePDF()/exportSubmissionPacket()
+     functions below.
+     ============================================================ -->
+<div class="toolbar" role="toolbar" aria-label="Case actions">
+  <button class="toolbtn" onclick="copyShareInfo()" title="Copy a shareable link and citation">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+    <span id="copyBtnLabel">Copy</span>
+  </button>
+  <button class="toolbtn" onclick="exportCasePDF()" title="Export this whole case as a PDF">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/></svg>
+    <span>Export PDF</span>
+  </button>
+  <button class="toolbtn primary" onclick="exportSubmissionPacket()" title="Package your notebook work as a PDF to submit">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+    <span>Submit</span>
+  </button>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="backlink" href="../../../app/student.html">&larr; Back to My Cases</a>
+    <div class="brandrow">
+      <svg class="logo" width="46" height="52" viewBox="0 0 64 72"><use href="#ha-logo"/></svg>
+      <div>
+        <div class="meta">MS &middot; Math &middot; Case Study &middot; 2026 &middot; Heroes Academy</div>
+        <h1>Case Study: Driving Age</h1>
+      </div>
+    </div>
+    <div class="pillbar">
+      <span class="pill">Tier T3</span>
+      <span class="pill">MS-stretch / HS-entry</span>
+      <span class="pill">Linear Modeling &amp; Cost Comparison</span>
+      <span class="pill" id="pickPill">No pick yet</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     CASE-AGNOSTIC — tab nav. Section ids listed here MUST match
+     the <section id="..."> ids below, and the `secs` array in the
+     script block. Add/remove tabs for a case with a different
+     section count, but keep the pairing 1:1 in all three places.
+     ============================================================ -->
+<nav class="tabs"><div class="inner" id="tabnav">
+  <a href="#overview">Overview</a>
+  <a href="#background">Background</a>
+  <a href="#dilemma">The Dilemma</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#appendices">Appendices</a>
+  <a href="#notebook">Working Notebook</a>
+  <a href="#twist">Twist</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- CASE-SPECIFIC: Overview — 150-300 words, in medias res, zero load-bearing
+     numbers (SPEC.md 1.2). A banner SVG is a nice-to-have, not required by
+     any gate; if you don't have time to hand-plot one, drop the <svg> and
+     lead straight into the <p class="lede">. -->
+<section id="overview">
+  <h2>Overview</h2>
+  
+  
+  <p class="lede">The chamber smells like floor wax and burnt coffee. Congresswoman Olivia Edmunds stands at her desk on the House floor, one hand flat on a folder of poll numbers, the other holding a phone that will not stop buzzing. Her seatmate from Sandpoint is mid-argument two rows over. Somewhere behind her, a clerk is stacking amendment copies loud enough to hear over the gavel.</p>
+  <p>Her phone lights up again: a text from her own kitchen table, four hundred miles south. <em>mom did u vote yet.</em> It&rsquo;s from her fourteen-year-old, who has been counting down the months to a learner&rsquo;s permit since she turned thirteen.</p>
+  <p>Edmunds grew up on a dairy farm outside Coolidge, on roads with no bus service and no sidewalks, where a fifteen-year-old who couldn&rsquo;t drive was a fifteen-year-old who couldn&rsquo;t get to work. She now spends her weeknights on a different kind of road &mdash; the ER (Emergency Room) at Banner Hospital, stitching up whatever the highway sends in, some of it worse than others.</p>
+  <p>&ldquo;The House recognizes the gentlewoman from Queen Creek,&rdquo; the Speaker says.</p>
+  <p>The tally board behind him is still blank. Every member on the floor is watching to see which way she stands.</p>
+  <p>She has the folder. She has the numbers. She has about forty seconds before the clerk calls her name.</p>
+  <p>She opens the folder.</p>
+
+</section>
+
+<!-- CASE-SPECIFIC: Background — the constraint set (SPEC.md 1.3). Reuse the
+     .card "Quick facts" pattern and .grid2 two-option-card pattern shown in
+     Cold Chain if they fit; they're generic layout, not case data. -->
+<section id="background">
+  <h2>Background</h2>
+  
+  <p>House Bill 3320 has been introduced in the Arizona House of Representatives by a bipartisan group of legislators. The bill repeals Arizona&rsquo;s Graduated License Program (GLP) &mdash; the state&rsquo;s current tiered system for teen drivers (see Appendix A) &mdash; and replaces it with a single, universal minimum age of 18 for any Class D driver&rsquo;s license, permit included. Under the bill, no one under 18 could legally drive at all, supervised or not.</p>
+  <p>Support for <em>some</em> change is broad in the House. The real fight is over <em>how much</em> change. The chamber splits along a <a class="sterm" data-term="Rural-Urban Line" href="https://www.census.gov/programs-surveys/geography/guidance/geo-areas/urban-rural.html" target="_blank" rel="noopener">rural/urban line<span class="tip">A figure of speech for a political split, not a geometry line: representatives divide based on whether their district is a dense city/suburb or a spread-out countryside area, because that changes what transportation options a teenager actually has.<span class="go">See the real source &rarr;</span></span></a>: urban representatives, whose districts have buses, ride-shares, and short trip distances, are largely for the bill; rural representatives, whose districts do not, are largely against it.</p>
+  <p>Congresswoman Olivia Edmunds (R&ndash;Queen Creek, meaning Republican, representing the Queen Creek district) has represented her district for over five years. She works nights as a nurse at Banner Hospital in Queen Creek in addition to her legislative duties, and she has four children &mdash; two of whom are inside the exact age window HB 3320 would change. A recent poll of her constituents found broad support for raising the minimum age <em>somewhat</em>, but no consensus on <em>how far</em> (see Appendix D).</p>
+  <p>The two positions on the floor have real, opposing arithmetic behind them, not just opinion. Representatives supporting the bill point to a genuine cost families avoid: two more years without a teen driver on the family policy (see Appendix C). Representatives opposing it point to a genuine cost families take on instead: two more years in which someone else has to drive that teenager everywhere the teenager used to drive themselves (see Appendix C). Both sides also point to real national data on driver age and fatal-crash involvement, though the two sides read that same data differently (see Appendix B).</p>
+  <p>Several other places already draw this line differently than Arizona does, which both camps have cited on the floor (see Appendix E). Every sourced figure in this case, and the one stated modeling assumption it relies on, is documented in full (see Appendices F and G).</p>
+  <p>Edmunds has not committed publicly. With five years of seniority (time served in the seat, which tends to earn a member more influence over undecided colleagues) and a reputation for careful votes, she is widely expected to move a bloc of undecided rural members whichever way she goes &mdash; toward AYE, raising the age to 18, or toward NAY, keeping Arizona&rsquo;s current minimum of 15&frac12;.</p>
+  <p>The final appendix (see Appendix H) lists the math vocabulary and &ldquo;how to&hellip;&rdquo; skills this case exercises, which Challenge 1 sends every Hero out to research.</p>
+
+  <!-- CASE-SPECIFIC: STORY/domain-vocabulary hover+hyperlink glossary (separate
+       layer from Appendix H's math GLOSSARY/gterm mechanism -- see STORY_GLOSSARY/
+       renderStoryGlossary()/autoLinkStoryTerms() near the bottom of this file). -->
+  <div class="card" style="padding:16px 16px 10px">
+    <h3 style="margin-top:0">Story vocabulary</h3>
+    <p class="side-note" style="margin-top:0">Hover any term below for a plain-English definition; click it to open a real source (a government civics page, a driver-license reference, or an insurance-glossary entry &mdash; verified working links, opens in a new tab). Separate from Appendix H's math vocabulary below.</p>
+    <div class="glossary-grid" id="storyGlossaryVocab"></div>
+  </div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape, CASE-SPECIFIC copy: the dilemma-pick widget. Keep
+     the radio-button + localStorage pattern; only the option text and the
+     card ids/values are case content. -->
+<section id="dilemma">
+  <h2>The Dilemma</h2>
+  <p>You are Congresswoman Olivia Edmunds. Do you&hellip;</p>
+  <div class="grid2">
+    <label class="optioncard" id="cardA">
+      <h4><input type="radio" name="pick" value="A" id="pickA">A &mdash; Vote AYE on HB 3320</h4>
+      <p style="margin:0">Raise Arizona&rsquo;s minimum driving age to 18. No one under 18 could hold any Class D permit or license, supervised or not.</p>
+    </label>
+    <label class="optioncard" id="cardB">
+      <h4><input type="radio" name="pick" value="B" id="pickB">B &mdash; Vote NAY on HB 3320</h4>
+      <p style="margin:0">Keep Arizona&rsquo;s current Graduated License Program, with a minimum permit age of 15&frac12;.</p>
+    </label>
+  </div>
+  <p class="toolnote">Taking a side here doesn't grade anything &mdash; it just keeps track of your position as you work, the same way Anchor&nbsp;1 in a live discussion asks for a show of hands before anyone touches a calculator. You can change it any time.</p>
+</section>
+
+<!-- CASE-AGNOSTIC shape (Challenges 1/2/4/5 are the SPEC.md verbatim
+     boilerplate from doctrine/CHALLENGE_BOILERPLATE.md — copy them exactly,
+     do not paraphrase, MCS-04); CASE-SPECIFIC: Challenge 3's deliverable
+     list and the appendix letter it points research at. -->
+<section id="challenges">
+  <h2>Challenges</h2>
+  <ol style="font-family:var(--serif)">
+    <li style="margin-bottom:10px">Research and find an online resource that answers one of the "how to&hellip;" questions from Appendix H. Post a link to the resource as your submission.</li>
+    <li style="margin-bottom:10px">Post 250+ "excellent" words pitching a firm stance on which order you'd choose and why. Your pitch must use the resource from Challenge 1 and include at least one original visual display of the data.</li>
+    <li style="margin-bottom:10px">Your pitch must include: D1) a scatterplot of Appendix B&rsquo;s real driver-age-vs-fatal-crash-rate data, ages 14&ndash;19, with a hand-drawn line of best fit; D2) the algebraic equation of that line read directly off your graph (slope-intercept form), plus what it predicts at age 15&frac12; and age 18; D3) a second linear equation built by hand from two rows you select from Appendix B&rsquo;s data table, with your slope and y-intercept arithmetic shown, and one sentence comparing it to D2; D4) a net two-year cost table (Appendix C) comparing Option A&rsquo;s added chauffeuring cost against Option B&rsquo;s added insurance cost, ending in one dollar total per option, plus a bar graph comparing the two totals.</li>
+    <li style="margin-bottom:10px">An appendix showing evidence of your original thinking &mdash; pictures, screenshots, notes, work. Doesn't count toward your word count.</li>
+    <li style="margin-bottom:10px">Participate twice or more in the case study discussion. If absent, post 500 "excellent" words on the questions above instead.</li>
+  </ol>
+
+  <h3>Deliverables checklist</h3>
+  <p class="side-note">These save in your browser as you go &mdash; nothing is sent anywhere. Use them to track your own progress, not as an answer key.</p>
+  <div id="dchecklist"></div>
+</section>
+
+<!-- CASE-SPECIFIC: Appendices A, B, C... — the case's own data tables,
+     diagrams, sources. Appendix G (the "How To..." vocabulary bridge,
+     SPEC.md 1.7) is CASE-AGNOSTIC in mechanism — keep the
+     #glossaryVocab / #glossaryHowto divs and the JS GLOSSARY/HOWTO data
+     object below; only the term list is case content. See
+     templates/INTERACTIVE_HTML_CONTRACT.md for the starter glossary and
+     the exact object shape T1-19 requires. -->
+<section id="appendices">
+  <h2>Appendices</h2>
+  
+  <details open>
+    <summary>Appendix A &mdash; House Bill 3320 and Arizona&rsquo;s Current Law</summary>
+    <div class="inner">
+      <p><strong>What HB 3320 changes.</strong> The bill repeals Chapter 17, Title 33 of the Arizona Code &mdash; "Title" and "Chapter" are just how Arizona's law books are organized into numbered sections, the way a textbook is organized into chapters; Chapter 17, Title 33 happens to be the one covering driver training courses &mdash; and amends Section 49-303 so that no one under 18 may be issued <em>any</em> Class D license, instruction permit, or driving privilege. It also repeals the current three-stage Class D learner&rsquo;s-permit structure outright.</p>
+      <p><strong>Arizona&rsquo;s current law</strong> (unchanged unless HB 3320 passes):</p>
+      <table id="apxA-table">
+        <tr><th>Stage</th><th>Minimum age</th><th>What it allows</th></tr>
+        <tr><td>Graduated Instruction Permit</td><td>15 years, 6 months [S1]</td><td>Supervised driving only, licensed adult 21+ in the vehicle</td></tr>
+        <tr><td>Class G Graduated Driver License</td><td>16 years [S1]</td><td>Independent (unsupervised) driving, with passenger/night restrictions for the first 6 months (limits on how many non-family passengers may ride along, and a curfew on driving during certain late-night hours)</td></tr>
+        <tr><td>Restrictions lifted / Class D available</td><td>18 years [S1]</td><td>Full, unrestricted driving privileges</td></tr>
+      </table>
+      <div class="bill-excerpt">&ldquo;(1) As an operator of a vehicle requiring a class D driver&rsquo;s license, is under the age of eighteen (18) years&hellip;&rdquo;</div>
+      <p>Under current Arizona law, a teen&rsquo;s <strong>first day of independent, unsupervised driving</strong> is the day they turn 16 [S1]. Under HB 3320, that day would not arrive until 18. That is the <strong>2-year</strong> window this case&rsquo;s cost comparison (Appendix C) is built around.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix B &mdash; Fatal Crash Involvement, By Driver Age</summary>
+    <div class="inner">
+      <p>Real, national data on deaths in passenger vehicles per 100,000 people, broken out by the driver&rsquo;s age and sex. Rows below cover ages 14 through 19; the full source table also runs from under 13 through 70+, some of which is included here as context you may or may not need for your pitch.</p>
+      <table id="apxB-table">
+        <tr><th>Age</th><th>Male drivers</th><th>Female drivers</th><th>All drivers</th></tr>
+        <tr><td>14</td><td class="num">0.3</td><td class="num">0.2</td><td class="num">0.3</td></tr>
+        <tr><td>15</td><td class="num">1.2</td><td class="num">0.5</td><td class="num">0.8</td></tr>
+        <tr><td>16</td><td class="num">5.3</td><td class="num">1.6</td><td class="num">3.5</td></tr>
+        <tr><td>17</td><td class="num">7.5</td><td class="num">3.1</td><td class="num">5.4</td></tr>
+        <tr><td>18</td><td class="num">10.5</td><td class="num">3.2</td><td class="num">7.0</td></tr>
+        <tr><td>19</td><td class="num">13.7</td><td class="num">3.7</td><td class="num">8.8</td></tr>
+        <tr><td>20&ndash;24 (context)</td><td class="num">11.9</td><td class="num">4.2</td><td class="num">8.1</td></tr>
+      </table>
+      <p class="side-note">Rate = deaths in passenger vehicles per 100,000 people of that age, 2024 [S2].</p>
+      <p>Additional national context some pitches may use and some may not: measured <strong>per mile driven</strong> rather than per 100,000 people, drivers ages 16&ndash;17 have a crash rate <strong>nearly double</strong> that of drivers ages 18&ndash;19 [S8] &mdash; the opposite direction from the per-population table above, which shows 16-year-olds with a <em>lower</em> rate than 18-year-olds. Both statistics are real and correctly cited; they simply divide by different things. S8&rsquo;s age bands (16&ndash;17 vs. 18&ndash;19) are the closest published per-mile breakdown to this case&rsquo;s actual 15&frac12;-vs-18 comparison &mdash; they are not an exact match for it, and the case does not claim they are. Deciding which of these two real, correct, and differently-grained statistics actually answers Congresswoman Edmunds&rsquo;s question is part of the work.</p>
+
+      <h3 style="margin-top:22px">Worked example &mdash; how to build a scatter plot with a line of best fit (not this case&rsquo;s real numbers)</h3>
+      <figure>
+        <svg viewBox="0 0 420 260" width="420" height="260" role="img" aria-label="Example scatter plot of hours of sleep versus reaction time for six made-up students, with a hand-drawn line of best fit">
+          <line x1="46" y1="20" x2="46" y2="220" stroke="#5b6472" stroke-width="1.5"/>
+          <line x1="46" y1="220" x2="400" y2="220" stroke="#5b6472" stroke-width="1.5"/>
+          <text x="10" y="18" font-family="sans-serif" font-size="11" fill="#5b6472">Reaction</text>
+          <text x="10" y="30" font-family="sans-serif" font-size="11" fill="#5b6472">time (ms)</text>
+          <text x="200" y="248" font-family="sans-serif" font-size="12" fill="#5b6472" text-anchor="middle">Hours of sleep (made-up student, x)</text>
+          <circle cx="80" cy="60" r="5" fill="#1a3a5c"/>
+          <circle cx="120" cy="90" r="5" fill="#1a3a5c"/>
+          <circle cx="170" cy="105" r="5" fill="#1a3a5c"/>
+          <circle cx="230" cy="140" r="5" fill="#1a3a5c"/>
+          <circle cx="290" cy="150" r="5" fill="#1a3a5c"/>
+          <circle cx="350" cy="185" r="5" fill="#1a3a5c"/>
+          <line x1="60" y1="48" x2="375" y2="196" stroke="#c9a227" stroke-width="2.5" stroke-dasharray="1 0"/>
+          <text x="200" y="180" font-family="sans-serif" font-size="11" fill="#8a6d10" transform="rotate(20 200 180)">line of best fit</text>
+        </svg>
+        <figcaption>This example uses a made-up dataset (six imaginary students&rsquo; hours of sleep vs. their reaction time) to show what a correctly built scatter plot with a hand-drawn line of best fit looks like: each real data point is plotted as its own dot, and one straight line is drawn through the middle of the pattern &mdash; not connecting every dot, but following the overall trend as closely as possible, with roughly as many points above the line as below it. For D1, plot Appendix B&rsquo;s real Age/All-drivers numbers (ages 14&ndash;19) the same way, then draw and label your own line &mdash; do not reuse the shape or slope of this example.</figcaption>
+      </figure>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix C &mdash; The Real Cost of Two Years</summary>
+    <div class="inner">
+      <p><strong>Side 1 &mdash; the cost Option A avoids.</strong> Insurers charge more to cover a new teen driver because teens statistically file more claims (see Appendix B) &mdash; so adding a 16-year-old driver to a family auto policy raises the average annual premium by <strong>$4,050</strong> [S3]. Under Option A, an Arizona family with a 16-to-17-year-old pays this for zero years instead of two.</p>
+      <p><strong>Side 2 &mdash; the cost Option A creates.</strong> A parent who has to drive their teenager everywhere the teenager would otherwise have driven themselves is putting real extra miles &mdash; and real extra dollars &mdash; on the family vehicle. Two figures make that cost calculable:</p>
+      <table id="apxC-figures">
+        <tr><th>Figure</th><th>Value</th></tr>
+        <tr><td>Full per-mile cost of operating a mid-size sedan &mdash; every real ownership cost combined: depreciation (the car losing resale value as it ages), fuel, maintenance, insurance, and financing (loan interest, if the car isn't paid off in cash)</td><td class="num"><strong>66.37&cent;/mile</strong> [S4]</td></tr>
+        <tr><td>U.S. average annual miles driven, per car</td><td class="num"><strong>11,026 miles/year</strong> [S5]</td></tr>
+      </table>
+      <p>No public dataset directly measures how many extra miles a parent drives chauffeuring a non-driving teenager (see Appendix F, MA1). Concretely, picture it as trips the teen would otherwise have made alone: a daily round trip to school, plus weekly practices, a part-time job, or seeing friends &mdash; each one becomes a mile a parent now drives instead, on top of the parent's own normal driving.</p>
+      <p>Table for your pitch to complete (values, not totals, are given here &mdash; see Challenge D4):</p>
+      <table id="apxC-table">
+        <tr><th></th><th>Option A (raise to 18)</th><th>Option B (keep 15&frac12;)</th></tr>
+        <tr><td>Years affected</td><td class="num">2</td><td class="num">2</td></tr>
+        <tr><td>Added insurance cost</td><td class="num">$0</td><td class="num">$4,050 &times; 2</td></tr>
+        <tr><td>Added chauffeuring cost</td><td class="num">MA1 miles/year &times; 2 &times; $0.6637/mile</td><td class="num">$0</td></tr>
+      </table>
+
+      <h3 style="margin-top:22px">Worked example &mdash; how to build a bar graph comparing two totals (not this case&rsquo;s real dollar figures)</h3>
+      <figure>
+        <svg viewBox="0 0 320 220" width="320" height="220" role="img" aria-label="Example bar graph comparing two made-up weekend job totals, Lawn Mowing at 18 dollars and Dog Walking at 24 dollars">
+          <line x1="46" y1="20" x2="46" y2="180" stroke="#5b6472" stroke-width="1.5"/>
+          <line x1="46" y1="180" x2="290" y2="180" stroke="#5b6472" stroke-width="1.5"/>
+          <text x="10" y="18" font-family="sans-serif" font-size="11" fill="#5b6472">Dollars</text>
+          <rect x="90" y="99" width="60" height="81" fill="#1a3a5c"/>
+          <text x="120" y="92" font-family="sans-serif" font-size="13" font-weight="700" fill="#1a3a5c" text-anchor="middle">$18</text>
+          <text x="120" y="196" font-family="sans-serif" font-size="11" fill="#5b6472" text-anchor="middle">Lawn Mowing</text>
+          <rect x="190" y="72" width="60" height="108" fill="#c9a227"/>
+          <text x="220" y="65" font-family="sans-serif" font-size="13" font-weight="700" fill="#8a6d10" text-anchor="middle">$24</text>
+          <text x="220" y="196" font-family="sans-serif" font-size="11" fill="#5b6472" text-anchor="middle">Dog Walking</text>
+        </svg>
+        <figcaption>This example uses two made-up weekend-job totals (not this case&rsquo;s real chauffeuring and insurance figures) to show what a correctly built bar graph looks like: each option gets its own labeled bar, the bar&rsquo;s height matches its dollar total to scale on a shared axis, and the exact total is written at the top of each bar. For D4, build your own bar graph the same way, using the two real two-year totals you calculate for Option A and Option B &mdash; do not reuse these dollar amounts.</figcaption>
+      </figure>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix D &mdash; What Constituents Told Congresswoman Edmunds</summary>
+    <div class="inner">
+      <p>Edmunds&rsquo;s office polled 240 constituents ahead of the vote.</p>
+      <table id="apxD-table">
+        <tr><th>Question</th><th>Result</th></tr>
+        <tr><td>&ldquo;Should Arizona raise its minimum driving age at all?&rdquo;</td><td>70% yes / 30% no</td></tr>
+        <tr><td>Among those who said yes, preferred new minimum age</td><td>20% said 16&frac12; &middot; 35% said 17 &middot; 32% said 18 &middot; 13% no preference</td></tr>
+      </table>
+      <p class="side-note">This is Edmunds&rsquo;s own district data, not a statewide or national figure, and it does not resolve to a single number your pitch needs. Whether &mdash; and how &mdash; to use it is your call.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix E &mdash; How Other Places Draw the Line</summary>
+    <div class="inner">
+      <p>Several U.S. states and other countries already set their minimum driving age differently than Arizona does:</p>
+      <table id="apxE-table">
+        <tr><th>Place</th><th>Minimum age</th></tr>
+        <tr><td>Arizona (current)</td><td>15&frac12; (permit)</td></tr>
+        <tr><td>New Jersey</td><td>16 (permit) [S6]</td></tr>
+        <tr><td>Germany</td><td>17, supervised &middot; 18, unsupervised [S7]</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix F &mdash; Modeling Assumptions</summary>
+    <div class="inner">
+      <p class="apx-note">These figures are <strong>not sourced</strong>. They are stated scenario assumptions chosen by the case author. A Hero may challenge them in discussion &mdash; that is a legitimate move. The <strong>Sensitivity</strong> column tells you how much the case's final answer depends on getting this one number right &mdash; "sensitive" means a modest change to this assumption could change which option looks cheaper.</p>
+      <table id="apxF-table">
+        <tr><th>#</th><th>Assumption</th><th>Value used</th><th>Basis</th><th>Sensitivity</th></tr>
+        <tr><td>MA1</td><td>Extra annual miles a parent drives chauffeuring a non-driving 16-to-17-year-old</td><td class="num">6,000 miles/year</td><td>No public dataset isolates parent-chauffeuring mileage specifically; the case anchors this figure to roughly half of the U.S. average annual per-car mileage (Appendix C, S5), reflecting a teen&rsquo;s typical share of a family&rsquo;s driving (school, activities, work) rather than 100% of an adult&rsquo;s full-time driving pattern.</td><td>The answer is sensitive to this value.</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details>
+    <summary>Appendix G &mdash; Sources</summary>
+    <div class="inner">
+      <p class="side-note"><strong>Confidence</strong> rates how directly each figure traces to its publisher: HIGH = a primary government or research-organization source, fetched directly. MEDIUM = a real, dated, specific figure from a reputable secondary website that gathers and compares information from many companies (an "aggregator," like a price-comparison site) rather than being the original publisher's own page. Every source below is real either way &mdash; Confidence is about how close to the original the citation is, not whether the number is trustworthy.</p>
+      <table id="apxG-table">
+        <tr><th>#</th><th>Claim</th><th>Value</th><th>Source</th><th>Date</th><th>Confidence</th></tr>
+        <tr><td>S1</td><td>AZ graduated driver license minimum ages</td><td>15y6m / 16y / 18y</td><td><a href="https://azdot.gov/mvd/services/driver-services/teen-drivers/permit-and-license-requirements" target="_blank" rel="noopener">Arizona Department of Transportation (ADOT) &mdash; Teen Driver Guide</a></td><td>2026</td><td>HIGH</td></tr>
+        <tr><td>S2</td><td>Deaths per 100,000 people, by driver age and sex</td><td>see Appendix B</td><td><a href="https://www.iihs.org/research-areas/fatality-statistics/detail/teenagers" target="_blank" rel="noopener">Insurance Institute for Highway Safety (IIHS) &mdash; Fatality Facts 2024: Teenagers</a></td><td>2024 data</td><td>HIGH</td></tr>
+        <tr><td>S3</td><td>Avg. annual premium increase, 16-year-old driver</td><td>$4,050/year</td><td><a href="https://www.carinsurance.com/Articles/adding-teen-driver-cost.aspx" target="_blank" rel="noopener">carinsurance.com (an insurance-comparison website, not an insurer itself) &mdash; Cost to Add a 16-Year-Old</a></td><td>Updated 2026-08-04</td><td>MEDIUM</td></tr>
+        <tr><td>S4</td><td>Full per-mile cost, mid-size sedan</td><td>66.37&cent;/mile</td><td><a href="https://newsroom.aaa.com/wp-content/uploads/2025/09/UPDATE-AAA-Fact-Sheet-Your-Driving-Cost-9.2025-1.pdf" target="_blank" rel="noopener">AAA (American Automobile Association) &mdash; Your Driving Costs 2025</a></td><td>2025</td><td>HIGH</td></tr>
+        <tr><td>S5</td><td>U.S. average annual vehicle-miles-traveled (VMT) per car</td><td>11,026 mi/year</td><td><a href="https://afdc.energy.gov/data/10309" target="_blank" rel="noopener">U.S. Dept. of Energy Alternative Fuels Data Center (DOE AFDC), citing the Federal Highway Administration (FHWA)</a></td><td>2024</td><td>HIGH</td></tr>
+        <tr><td>S6</td><td>New Jersey minimum permit age</td><td>16 years</td><td><a href="https://www.dmv.org/nj-new-jersey/teen-drivers.php" target="_blank" rel="noopener">DMV.ORG (a private information website, not an official state DMV) &mdash; NJ Teen Drivers</a></td><td>2026</td><td>MEDIUM</td></tr>
+        <tr><td>S7</td><td>Germany minimum driving age</td><td>17 / 18</td><td><a href="https://verwaltung.bund.de/leistungsverzeichnis/en/leistung/99108047001002" target="_blank" rel="noopener">German Federal Government Portal</a></td><td>2026</td><td>HIGH</td></tr>
+        <tr><td>S8</td><td>Crash rate per mile, ages 16-17 vs 18-19</td><td>16-17 nearly double 18-19</td><td><a href="https://aaafoundation.org/research/rates-motor-vehicle-crashes-injuries-deaths-relation-driver-age-united-states-2014-2015/" target="_blank" rel="noopener">AAA Foundation for Traffic Safety (a nonprofit research arm, separate from the AAA of S4)</a></td><td>Published 2017 (2014&ndash;2015 data)</td><td>HIGH</td></tr>
+      </table>
+    </div>
+  </details>
+
+
+  <details open id="apx-glossary">
+    <summary>Appendix H &mdash; "How To&hellip;" Math Questions To Research</summary>
+    <div class="inner">
+      <p><strong>Vocabulary.</strong> Hover any term for a plain-English definition; click it to open a real lesson on it (allowlisted educational sites, verified working links, opens in a new tab).</p>
+      <div class="glossary-grid" id="glossaryVocab"></div>
+      <p><strong>How to&hellip;</strong> same idea &mdash; each links to the concept it needs.</p>
+      <ul class="howto-list" id="glossaryHowto"></ul>
+      <p class="gloss-source">Links verified working 2026-08-01. If a link has moved by the time you read this, search the phrase directly &mdash; don't trust a dead link.</p>
+    </div>
+  </details>
+</section>
+
+<!-- CASE-SPECIFIC: the self-checking Working Notebook. Structure each step
+     as a .stepbox with a goal line, inputs, and a Check button wired to a
+     JS function that compares against the case's own JS-ported
+     sensitivity_model (see contract doc — evaluate()/evaluate_twist()).
+     Cold Chain used 4 steps (geometry -> capacity/cost -> ledger -> tally);
+     your case may need fewer or more. The generic helpers fb()/round()/
+     near()/val() below are reusable as-is. -->
+<section id="notebook">
+  <h2>Working Notebook</h2>
+  <p>This is a calculator, not an answer key. Type your own numbers first &mdash; then hit <strong>Check</strong> to see if your arithmetic matches. It won't tell you which option to choose; that part is still yours.</p>
+  
+  <div class="stepbox">
+    <h4><svg class="icon" width="18" height="18"><use href="#icon-chart"/></svg> Step 1 &mdash; Transcribe your scatterplot data (D1)</h4>
+    <div class="goal">Copy Appendix B&rsquo;s Age / All-drivers columns, ages 14&ndash;19, into the boxes below. This is the data you&rsquo;ll hand-plot for your scatterplot and line of best fit.</div>
+    <div class="fieldrow"><label>Age 14 rate</label><input type="number" step="0.1" id="d1_14"><label>Age 17 rate</label><input type="number" step="0.1" id="d1_17"></div>
+    <div class="fieldrow"><label>Age 15 rate</label><input type="number" step="0.1" id="d1_15"><label>Age 18 rate</label><input type="number" step="0.1" id="d1_18"></div>
+    <div class="fieldrow"><label>Age 16 rate</label><input type="number" step="0.1" id="d1_16"><label>Age 19 rate</label><input type="number" step="0.1" id="d1_19"></div>
+    <button onclick="checkD1()">Check</button> <span class="fb" id="fb_d1"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4><svg class="icon" width="18" height="18"><use href="#icon-chart"/></svg> Step 2 &mdash; Your graphed line of best fit (D2)</h4>
+    <div class="goal">Read your slope (m) and y-intercept (b) directly off your hand-drawn graph, then use y = mx + b to predict the rate at age 15.5 and age 18. This checks that your predictions match your own equation &mdash; it does not tell you if your line is drawn correctly.</div>
+    <div class="fieldrow"><label>Slope (m)</label><input type="number" step="any" id="d2_m"><label>Y-intercept (b)</label><input type="number" step="any" id="d2_b"></div>
+    <div class="fieldrow"><label>Predicted rate at age 15.5</label><input type="number" step="any" id="d2_pred155"><label>Predicted rate at age 18</label><input type="number" step="any" id="d2_pred18"></div>
+    <button onclick="checkD2()">Check</button> <span class="fb" id="fb_d2"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4><svg class="icon" width="18" height="18"><use href="#icon-chart"/></svg> Step 3 &mdash; Second equation, built from two data points (D3)</h4>
+    <div class="goal">Pick two rows from Appendix B&rsquo;s table (not read off your graph). Enter both points, then your own slope and y-intercept arithmetic. This checks your arithmetic against the two points you chose &mdash; any two real rows from Appendix B are valid.</div>
+    <div class="fieldrow"><label>Point 1: age</label><input type="number" step="any" id="d3_x1"><label>rate</label><input type="number" step="any" id="d3_y1"></div>
+    <div class="fieldrow"><label>Point 2: age</label><input type="number" step="any" id="d3_x2"><label>rate</label><input type="number" step="any" id="d3_y2"></div>
+    <div class="fieldrow"><label>Your computed slope</label><input type="number" step="any" id="d3_m"><label>Your computed y-intercept</label><input type="number" step="any" id="d3_b"></div>
+    <button onclick="checkD3()">Check</button> <span class="fb" id="fb_d3"></span>
+  </div>
+
+  <div class="stepbox">
+    <h4><svg class="icon" width="18" height="18"><use href="#icon-car"/></svg> Step 4 &mdash; Net two-year cost table (D4)</h4>
+    <div class="goal">Using Appendix C&rsquo;s figures and Appendix F&rsquo;s MA1 chauffeuring-mileage assumption (pre-filled below, but you can flex it &mdash; MA1 is a disclosed, challengeable estimate), compute each option&rsquo;s two-year total.</div>
+    <div class="sliderow"><span>Chauffeuring miles/year (MA1)</span><input type="range" id="d4_miles" min="1000" max="12000" step="250" value="6000" oninput="document.getElementById('d4_milesval').textContent=this.value"><span class="val" id="d4_milesval">6000</span></div>
+    <div class="fieldrow"><label>Option A total (chauffeuring only)</label><input type="number" step="any" id="d4_a"><label>Option B total (insurance only)</label><input type="number" step="any" id="d4_b"></div>
+    <button onclick="checkD4()">Check</button> <span class="fb" id="fb_d4"></span>
+  </div>
+
+</section>
+
+<!-- CASE-AGNOSTIC shape: the gated twist reveal (narrative hidden until a
+     facilitator says to reveal it, then a separate checkbox applies it to
+     the math). CASE-SPECIFIC: the narrative text and what onTwistToggle()
+     recomputes. -->
+<section id="twist">
+  <h2>Twist</h2>
+  <div class="toolnote">Ask your facilitator before revealing this &mdash; in a live discussion, the Twist is dropped at a specific moment, not read in advance.</div>
+  <div class="twistbox">
+    <h4 id="twistToggleLabel"><svg class="icon" width="20" height="20" style="stroke:#c9a227;vertical-align:-4px"><use href="#icon-thermo"/></svg> Reveal the Twist</h4>
+    <button class="gold" onclick="revealTwist()" id="twistBtn">I've been told to reveal it</button>
+    <div id="twistNarrative">
+      
+      <p><strong>Look again at Appendix B.</strong> The main table is a rate <em>per 100,000 people</em> of a given age &mdash; not a rate per mile driven, and not a rate per licensed driver. Appendix B also cites a separate, real statistic (S8, AAA Foundation for Traffic Safety): measured per mile driven, drivers ages 16&ndash;17 crash <strong>nearly twice</strong> as often as drivers ages 18&ndash;19.</p>
+      <p>Two real, correctly-cited statistics about nearly the same age group point in <em>opposite</em> directions depending on which denominator you pick. Neither one is an exact match for Congresswoman Edmunds&rsquo;s actual 15&frac12;-vs-18 comparison &mdash; S8&rsquo;s 16&ndash;17-vs-18&ndash;19 bands are the closest real per-mile data available, not a perfect fit.</p>
+      <p><strong>You have 60 seconds. Does this change your vote &mdash; or not?</strong></p>
+
+      <div class="chk" style="background:#2b323b;border-color:#444">
+        <input type="checkbox" id="applyTwist" onchange="onTwistToggle()">
+        <label for="applyTwist" style="color:#e8e3d5">Apply the twist: show the per-mile (S8, ages 16&ndash;17 vs. 18&ndash;19) safety read alongside the per-100,000-population table, instead of relying on the population table alone.</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:640px;margin:0 auto 14px;text-align:left">
+    <strong style="font-family:var(--sans);color:var(--navy)">Sources</strong>
+    <ul class="src-list">
+      
+      <li>[S1] Arizona Department of Transportation (ADOT) &mdash; <a href="https://azdot.gov/mvd/services/driver-services/teen-drivers/permit-and-license-requirements" target="_blank" rel="noopener">Teen Driver Guide to Class G Permit and License</a>, 2026.</li>
+      <li>[S2] Insurance Institute for Highway Safety (IIHS) &mdash; <a href="https://www.iihs.org/research-areas/fatality-statistics/detail/teenagers" target="_blank" rel="noopener">Fatality Facts 2024: Teenagers</a>, 2024 data.</li>
+      <li>[S3] carinsurance.com (insurance-comparison website) &mdash; <a href="https://www.carinsurance.com/Articles/adding-teen-driver-cost.aspx" target="_blank" rel="noopener">Cost to Add a 16-Year-Old to Car Insurance</a>, updated 2026-08-04.</li>
+      <li>[S4] AAA (American Automobile Association) &mdash; <a href="https://newsroom.aaa.com/wp-content/uploads/2025/09/UPDATE-AAA-Fact-Sheet-Your-Driving-Cost-9.2025-1.pdf" target="_blank" rel="noopener">Your Driving Costs 2025</a>.</li>
+      <li>[S5] U.S. Dept. of Energy Alternative Fuels Data Center (DOE AFDC), citing Federal Highway Administration (FHWA) Highway Statistics &mdash; <a href="https://afdc.energy.gov/data/10309" target="_blank" rel="noopener">Average Annual Vehicle Miles Traveled</a>, 2024.</li>
+      <li>[S6] DMV.ORG (private information website, not an official state DMV) &mdash; <a href="https://www.dmv.org/nj-new-jersey/teen-drivers.php" target="_blank" rel="noopener">MVC New Jersey Teen Drivers</a>, 2026.</li>
+      <li>[S7] German Federal Government &mdash; <a href="https://verwaltung.bund.de/leistungsverzeichnis/en/leistung/99108047001002" target="_blank" rel="noopener">Driving license for accompanied driving from 17</a>, 2026.</li>
+      <li>[S8] AAA Foundation for Traffic Safety (nonprofit research arm, separate from the AAA of S4) &mdash; <a href="https://aaafoundation.org/research/rates-motor-vehicle-crashes-injuries-deaths-relation-driver-age-united-states-2014-2015/" target="_blank" rel="noopener">Rates of Motor Vehicle Crashes, Injuries and Deaths in Relation to Driver Age</a>, published 2017 (2014&ndash;2015 data).</li>
+
+    </ul>
+  </div>
+  <svg width="20" height="22" viewBox="0 0 64 72" style="vertical-align:-5px;margin-right:6px"><use href="#ha-logo"/></svg>
+  Driving Age &middot; Heroes Academy Math Builder &middot; built for classroom + independent use.
+</footer>
+</div>
+
+<script>
+/* ================================================================
+   CASE-SPECIFIC — given data, copied verbatim from cases/<id>/case.json
+   (record the sha256 in this comment, same convention as Cold Chain, so
+   a reader can confirm this file has not drifted from the source of
+   record). This is also where a JS port of sensitivity_model.py's
+   PARAMS/evaluate()/evaluate_twist() lives — see the contract doc for
+   the exact shape the Step 3/4 checkers below expect it to have.
+   ================================================================ */
+
+// Source of record: cases/driving-age/case.json (sha256 recorded in case.json.qa.case_md_sha256 =
+// ce1f78d581f0bd3368c2a5918ecbbcd752512f63016a74dbd5165ce52ba1ae3b). This is a JS port of
+// cases/driving-age/sensitivity_model.py's PARAMS/FLEX/evaluate()/evaluate_twist(), kept in sync by
+// hand per templates/INTERACTIVE_HTML_CONTRACT.md section 2.
+const PARAMS = {
+  chauffeuring_miles_per_year: 6000,   // Appendix F, MA1 -- disclosed, unsourced assumption
+  delay_years: 2,                       // Appendix A, S1 -- real AZ law, 16 -> 18
+  cost_per_mile_usd: 0.6637,            // Appendix C, S4 -- real AAA fully-loaded per-mile cost
+  insurance_increase_per_year_usd: 4050.00, // Appendix C, S3 -- real avg premium increase
+  rate_age_16: 3.5,                     // Appendix B, S2 -- IIHS per-100,000-population rate
+  rate_age_18: 7.0,
+  rate_age_19: 8.8,
+};
+const FLEX = ["chauffeuring_miles_per_year"]; // the one genuine scenario dial (MA1)
+
+function evaluate(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const A = p.chauffeuring_miles_per_year * p.delay_years * p.cost_per_mile_usd; // Option A: chauffeuring only
+  const B = p.insurance_increase_per_year_usd * p.delay_years;                   // Option B: insurance only
+  return {A: A, B: B};
+}
+function evaluate_twist(params){
+  const p = Object.assign({}, PARAMS, params || {});
+  const out = evaluate(p);
+  out.twist_note = "naive safety read: rate climbs from " + p.rate_age_16.toFixed(1) + " (age 16) to " +
+    p.rate_age_18.toFixed(1) + " (age 18) to " + p.rate_age_19.toFixed(1) +
+    " (age 19) per 100,000 people -- NOT a per-mile risk rate, and S8's per-mile ages 16-17 vs 18-19 " +
+    "comparison points the opposite direction.";
+  return out;
+}
+
+// Appendix B's real data, ages 14-19 -- for Step 1's transcription check (this is public data
+// already printed in the Appendix B table above, not a computed verdict).
+const APPENDIX_B = {14:0.3, 15:0.8, 16:3.5, 17:5.4, 18:7.0, 19:8.8};
+
+
+/* ================================================================
+   CASE-AGNOSTIC — generic checker helpers. Reuse as-is.
+   ================================================================ */
+const round=(x,d=2)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function fb(id, ok, correct){
+  const el=document.getElementById(id);
+  el.className='fb '+(ok?'ok':'bad');
+  el.textContent = ok ? '✓' : 'try again';
+}
+function val(id){ return document.getElementById(id).value || 0; }
+
+/* ================================================================
+   CASE-AGNOSTIC — CSV export for every data table (all datasets in
+   this case download as .csv for Google Sheets / Excel).
+   ================================================================ */
+function tableToCSV(table){
+  const rows = Array.from(table.querySelectorAll('tr'));
+  return rows.map(row =>
+    Array.from(row.querySelectorAll('th,td')).map(cell => {
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      if(/[",\n]/.test(text)) text = '"' + text.replace(/"/g,'""') + '"';
+      return text;
+    }).join(',')
+  ).join('\r\n');
+}
+function downloadCSV(tableId, filename){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const csv = tableToCSV(table);
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+/* Auto-injects a "Download CSV" button after every data <table> the author
+   writes in an appendix -- no per-table wiring needed. Filename is derived
+   from the nearest preceding <summary> text (falls back to "table-N"). Call
+   this once after the appendices markup exists in the DOM (see the call
+   near the bottom of this script, after autoLinkGlossaryTerms). */
+function autoAddCSVButtons(caseId){
+  let n = 0;
+  document.querySelectorAll('#appendices table').forEach(table => {
+    if(table.dataset.csvWired) return;
+    table.dataset.csvWired = '1';
+    n += 1;
+    if(!table.id) table.id = 'csvTable' + n;
+    const details = table.closest('details');
+    const summary = details ? details.querySelector('summary') : null;
+    let rawLabel = summary ? summary.textContent.replace(/^Appendix\s+[A-Z]\s*[-\u2014]?\s*/i, '') : ('Table ' + n);
+    rawLabel = rawLabel.trim();
+    let label = rawLabel.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || ('table-' + n);
+    const row = document.createElement('div');
+    row.className = 'csv-row';
+    const csvBtn = document.createElement('button');
+    csvBtn.className = 'csvbtn';
+    csvBtn.textContent = '\u2B07 Download CSV';
+    csvBtn.onclick = () => downloadCSV(table.id, caseId + '-' + label + '.csv');
+    row.appendChild(csvBtn);
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'csvbtn';
+    pdfBtn.textContent = '\u{1F5B6} PDF';
+    pdfBtn.onclick = () => printTable(table.id, rawLabel || ('Table ' + n));
+    row.appendChild(pdfBtn);
+    table.insertAdjacentElement('afterend', row);
+  });
+}
+
+/* ================================================================
+   CASE-AGNOSTIC \u2014 top-right toolbar: copy a shareable link and
+   citation, export the whole case as a PDF, or package this Hero's
+   own notebook work into a printable submission packet. No external
+   libraries \u2014 PDF export leans entirely on the browser's own
+   print-to-PDF, same mechanism printTable() above already uses.
+   ================================================================ */
+function copyShareInfo(){
+  const title = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const srcLis = Array.from(document.querySelectorAll('footer .src-list li')).map(li => '- ' + li.textContent.trim());
+  const block = [
+    title,
+    'Heroes Academy Math Builder case study',
+    '',
+    'Sources:',
+    ...srcLis,
+    '',
+    location.href
+  ].join('\n');
+  const onCopied = () => {
+    const label = document.getElementById('copyBtnLabel');
+    if(!label) return;
+    const prev = label.textContent;
+    label.textContent = 'Copied!';
+    setTimeout(()=>{ label.textContent = prev; }, 1600);
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try{ document.execCommand('copy'); onCopied(); } catch(e){ /* nothing more we can do silently */ }
+    document.body.removeChild(ta);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(block).then(onCopied).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function exportCasePDF(){
+  document.querySelectorAll('#appendices details').forEach(d => d.open = true);
+  window.print();
+}
+
+function printHTMLDoc(title, bodyHTML){
+  const w = window.open('', '_blank');
+  if(!w) return;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2530;padding:32px;max-width:760px;margin:0 auto}
+      h1{font-family:Georgia,serif;color:#1a3a5c;font-size:1.5rem;margin:0 0 4px}
+      h2{font-family:Georgia,serif;color:#1a3a5c;font-size:1.1rem;margin:22px 0 8px;border-left:4px solid #c9a227;padding-left:10px}
+      table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.86rem}
+      th,td{border:1px solid #dfe4ea;padding:6px 8px;text-align:left}
+      th{background:#1a3a5c;color:#fff}
+      .meta{color:#5b6472;font-size:.82rem;margin-bottom:18px}
+      .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding:6px 0}
+      .ok{color:#1f7a4d;font-weight:700} .bad{color:#a3312a;font-weight:700} .unanswered{color:#999}
+    </style></head><body>${bodyHTML}
+<link rel="stylesheet" href="/coach/coach.css">
+<script src="/coach/coach.js" defer></script>
+</body></html>`);
+  w.document.close();
+  w.onload = () => w.print();
+}
+
+function printTable(tableId, title){
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || '';
+  printHTMLDoc(title, `<h1>${title}</h1><div class="meta">${caseTitle}</div>${table.outerHTML}`);
+}
+
+function exportSubmissionPacket(){
+  const caseTitle = document.querySelector('header.top h1')?.textContent?.trim() || document.title;
+  const pick = localStorage.getItem(CASE_ID+'_pick');
+  const pickLabel = pick ? ('Option ' + pick) : 'Not yet chosen';
+
+  const notebookRows = Array.from(document.querySelectorAll('#notebook .fieldrow')).map(row => {
+    const label = row.querySelector('label')?.textContent?.trim();
+    const input = row.querySelector('input, select');
+    const fbEl = row.querySelector('.fb');
+    if(!label || !input) return null;
+    const inputVal = input.value || '(blank)';
+    const status = fbEl ? (fbEl.classList.contains('ok') ? 'ok' : (fbEl.classList.contains('bad') ? 'bad' : 'unanswered')) : 'unanswered';
+    const statusLabel = status === 'ok' ? 'checks out' : status === 'bad' ? 'needs another look' : 'not checked yet';
+    return `<div class="row"><span>${label}</span><span>${inputVal} &mdash; <span class="${status}">${statusLabel}</span></span></div>`;
+  }).filter(Boolean).join('');
+
+  const deliverableRows = (typeof DELIVERABLES !== 'undefined' ? DELIVERABLES : []).map(([id, label]) => {
+    const done = localStorage.getItem(CASE_ID+'_chk_'+id) === '1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="row"><span><strong>${id}</strong> &mdash; ${label}</span><span class="${done ? 'ok' : 'unanswered'}">${done ? 'marked done' : 'not marked done'}</span></div>`
+      + (note ? `<div class="meta" style="margin:-4px 0 8px">Note: ${note}</div>` : '');
+  }).join('');
+
+  const body = `
+    <h1>${caseTitle} &mdash; Submission Packet</h1>
+    <div class="meta">Prepared from this Hero's own worked notebook and checklist. Not a scored submission &mdash; drop this file in your case's Google Drive submission folder alongside your write-up.</div>
+    <h2>Dilemma pick</h2>
+    <div class="row"><span>Current position</span><span>${pickLabel}</span></div>
+    <h2>Working Notebook</h2>
+    ${notebookRows || '<div class="meta">No notebook values entered yet.</div>'}
+    <h2>Deliverables checklist</h2>
+    ${deliverableRows}
+  `;
+  printHTMLDoc(caseTitle + ' - Submission Packet', body);
+}
+
+
+/* ================================================================
+   CASE-SPECIFIC — Working Notebook check functions (checkGeometry,
+   checkCapacity, checkLedger, checkTally, drawTallyChart, or whatever
+   your case's steps are named). Wire each .stepbox button's onclick to
+   one of these. Read evaluate()/evaluate_twist() from the JS data block
+   above rather than re-deriving the arithmetic inline, so the notebook
+   and sensitivity_model.py can never silently drift apart.
+   ================================================================ */
+
+function checkD1(){
+  const ages = [14,15,16,17,18,19];
+  let ok = true;
+  ages.forEach(a => {
+    const entered = parseFloat(val('d1_'+a));
+    if(!near(entered, APPENDIX_B[a], 0.05)) ok = false;
+  });
+  fb('fb_d1', ok);
+}
+
+function checkD2(){
+  const m = parseFloat(val('d2_m'));
+  const b = parseFloat(val('d2_b'));
+  const pred155 = parseFloat(val('d2_pred155'));
+  const pred18 = parseFloat(val('d2_pred18'));
+  if(isNaN(m) || isNaN(b) || isNaN(pred155) || isNaN(pred18)){ fb('fb_d2', false); return; }
+  const expect155 = m * 15.5 + b;
+  const expect18 = m * 18 + b;
+  const ok = near(pred155, expect155, 0.15) && near(pred18, expect18, 0.15);
+  fb('fb_d2', ok);
+}
+
+function checkD3(){
+  const x1 = parseFloat(val('d3_x1')), y1 = parseFloat(val('d3_y1'));
+  const x2 = parseFloat(val('d3_x2')), y2 = parseFloat(val('d3_y2'));
+  const m = parseFloat(val('d3_m')), b = parseFloat(val('d3_b'));
+  if([x1,y1,x2,y2,m,b].some(isNaN) || x1 === x2){ fb('fb_d3', false); return; }
+  const expectM = (y2 - y1) / (x2 - x1);
+  const expectB = y1 - expectM * x1;
+  const ok = near(m, expectM, 0.05) && near(b, expectB, 0.3);
+  fb('fb_d3', ok);
+}
+
+function checkD4(){
+  const miles = parseFloat(val('d4_miles'));
+  const enteredA = parseFloat(val('d4_a'));
+  const enteredB = parseFloat(val('d4_b'));
+  if(isNaN(enteredA) || isNaN(enteredB)){ fb('fb_d4', false); return; }
+  const expect = evaluate({chauffeuring_miles_per_year: miles});
+  const ok = near(enteredA, expect.A, 1) && near(enteredB, expect.B, 1);
+  fb('fb_d4', ok);
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — dilemma pick widget. Uses caseId-prefixed
+   localStorage keys so multiple cases opened in the same browser
+   don't collide (Cold Chain's original file used a bare 'coldchain_pick'
+   key; every case built from this shell must set CASE_ID below).
+   ================================================================ */
+const CASE_ID = "driving-age"; // short slug, e.g. "cold-chain" -- used for localStorage key prefixes only
+function updatePick(){
+  const picked = document.querySelector('input[name=pick]:checked');
+  document.getElementById('cardA').classList.toggle('picked', picked && picked.value==='A');
+  document.getElementById('cardB').classList.toggle('picked', picked && picked.value==='B');
+  document.getElementById('pickPill').textContent = picked ? ('Current pick: '+picked.value) : 'No pick yet';
+  if(picked) localStorage.setItem(CASE_ID+'_pick', picked.value);
+}
+function restorePick(){
+  const saved = localStorage.getItem(CASE_ID+'_pick');
+  if(saved){ const el=document.getElementById('pick'+saved); if(el){ el.checked=true; updatePick(); } }
+}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.addEventListener('change', updatePick));
+restorePick();
+
+/* ================================================================
+   CASE-SPECIFIC — deliverables list for the checklist. One [id, label]
+   pair per deliverable (D1, D2, ... map to the Challenge-3 list above).
+   ================================================================ */
+const DELIVERABLES = [
+  ["D1", "Scatterplot of Appendix B's driver-age-vs-fatal-crash-rate data (ages 14-19) with a hand-drawn line of best fit"],
+  ["D2", "Algebraic equation of your line of best fit (slope-intercept), plus predictions at age 15.5 and age 18"],
+  ["D3", "Second linear equation built by hand from two Appendix B data points, with slope/intercept arithmetic shown"],
+  ["D4", "Net two-year cost table comparing Option A's chauffeuring cost to Option B's insurance cost, plus a bar graph"]
+];
+
+/* ================================================================
+   CASE-AGNOSTIC — checklist render + localStorage persistence.
+   Reuse as-is; only DELIVERABLES above is case content.
+   ================================================================ */
+function renderChecklist(){
+  const el = document.getElementById('dchecklist');
+  el.innerHTML = progressHTML() + DELIVERABLES.map(([id,label])=>{
+    const checked = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+    const note = localStorage.getItem(CASE_ID+'_note_'+id) || '';
+    return `<div class="chk"><input type="checkbox" id="chk_${id}" ${checked?'checked':''} onchange="toggleChk('${id}')">
+      <div style="flex:1"><label for="chk_${id}"><strong>${id}</strong> &mdash; ${label}</label>
+      <textarea placeholder="notes to yourself (optional)" oninput="saveNote('${id}', this.value)">${note}</textarea></div></div>`;
+  }).join('');
+}
+function progressHTML(){
+  const done = DELIVERABLES.filter(([id])=>localStorage.getItem(CASE_ID+'_chk_'+id)==='1').length;
+  const pct = Math.round(100*done/DELIVERABLES.length);
+  return `<div class="progresswrap">${done} / ${DELIVERABLES.length} marked done
+    <div class="progressbar"><div style="width:${pct}%"></div></div></div>`;
+}
+function toggleChk(id){
+  const cur = localStorage.getItem(CASE_ID+'_chk_'+id)==='1';
+  localStorage.setItem(CASE_ID+'_chk_'+id, cur ? '0' : '1');
+  renderChecklist();
+}
+function saveNote(id, v){ localStorage.setItem(CASE_ID+'_note_'+id, v); }
+renderChecklist();
+
+/* ================================================================
+   CASE-SPECIFIC — glossary content (MCS-39: >=8 terms, every url
+   https:// to an allowlisted domain: khanacademy.org, mathsisfun.com,
+   cuemath.com, purplemath.com, ck12.org, nctm.org, openstax.org).
+   Start from templates/INTERACTIVE_HTML_CONTRACT.md's per-domain
+   starter blocks and extend with case-specific terms. KEEP THIS EXACT
+   OBJECT SHAPE -- double-quoted label keys, unquoted def/url property
+   names, https:// urls -- T1-19's regex depends on it (see contract doc
+   "T1-19 gotcha"). If both a JS data object and static <a class="gterm">
+   anchors exist in the file, the JS object wins for counting; don't mix
+   partially-filled versions of both.
+   ================================================================ */
+const GLOSSARY = {
+  "Scatter Plot": {def: "A graph that plots pairs of numbers as points, used to look for a relationship between two variables.",
+    url: "https://www.khanacademy.org/math/cc-eighth-grade-math/cc-8th-data/cc-8th-scatter-plots/e/constructing-scatter-plots"},
+  "Line Of Best Fit": {def: "A single straight line drawn through a scatter plot that best represents the overall trend of the data.",
+    url: "https://www.khanacademy.org/math/cc-eighth-grade-math/cc-8th-data/cc-8th-line-of-best-fit/v/estimating-the-line-of-best-fit-exercise"},
+  "Slope": {def: "How steep a line is -- the vertical change (rise) divided by the horizontal change (run) between two points on it.",
+    url: "https://www.khanacademy.org/math/algebra-basics/alg-basics-graphing-lines-and-slope/alg-basics-slope/v/introduction-to-slope"},
+  "Correlation": {def: "How closely two variables move together -- a positive correlation means as one goes up, so does the other.",
+    url: "https://www.khanacademy.org/math/probability/scatterplots-a1/creating-interpreting-scatterplots/e/correlation-coefficient-intuition"},
+  "Line": {def: "A straight path with no thickness that extends infinitely in both directions.",
+    url: "https://www.mathsisfun.com/definitions/line.html"},
+  "Currency": {def: "Physical money, such as coins or banknotes, used as a medium of exchange, usually issued by a government.",
+    url: "https://www.mathsisfun.com/definitions/currency.html"},
+  "Decimal": {def: "A number written with place value to the right of a decimal point, e.g. 0.34.",
+    url: "https://www.khanacademy.org/math/arithmetic/arith-decimals"},
+  "Unit": {def: "A defined quantity -- a centimeter, an hour, a mile -- used as a standard for measuring.",
+    url: "https://www.khanacademy.org/math/cc-fifth-grade-math/imp-measurement-and-data-3"},
+  "Data": {def: "Facts or numbers collected for reference or analysis.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"},
+  "Bar Graph": {def: "A chart that uses rectangular bars to compare values across categories.",
+    url: "https://www.khanacademy.org/math/cc-sixth-grade-math/cc-6th-data-statistics"},
+  "Y-Intercept": {def: "The point where a line crosses the vertical (y) axis -- the value of y when x = 0. In y = mx + b, it is b.",
+    url: "https://www.mathsisfun.com/definitions/y-intercept.html"},
+  "Slope-Intercept Form": {def: "A way of writing a line's equation as y = mx + b, where m is the slope and b is the y-intercept -- reading a graph's slope and where it crosses the y-axis is all you need to write this form.",
+    url: "https://www.mathsisfun.com/geometry/slope.html"},
+};
+const HOWTO = [
+  ["how to create a scatter plot given a set of data", "Scatter Plot"],
+  ["how to draw a line of best fit given a set of data", "Line Of Best Fit"],
+  ["how to write a linear equation given a graph of a line of a set of data", "Line Of Best Fit"],
+  ["how to write a linear equation given a set of data", "Slope"],
+  ["how to identify the slope of a line given a set of data, or a graph of a line of a set of data, or its linear equation", "Slope"],
+  ["how to identify correlation given a scatter plot or set of data", "Correlation"],
+  ["how to add decimal numbers", "Decimal"],
+  ["how to subtract decimal numbers", "Decimal"],
+  ["how to multiply decimal numbers", "Decimal"],
+  ["how to convert an amount from one unit to another unit", "Unit"],
+  ["how to compare two or more values", "Data"]
+];
+
+/* ================================================================
+   CASE-SPECIFIC — STORY/domain-vocabulary glossary content (MCS-47/
+   T1-21). A deliberate PARALLEL to GLOSSARY above, not an extension of
+   it: different object shape (desc plus link, not def plus url),
+   different class (sterm, not gterm), so T1-19's math-glossary regex
+   (which scans for the def-then-url property-pair shape and gterm-
+   classed anchors) never sees these entries and never checks their
+   civics/DMV/insurance urls against the math-education
+   ALLOWLIST_DOMAINS -- those domains are correctly not on that
+   allowlist, and were never meant to be.
+   ================================================================ */
+const STORY_GLOSSARY = {
+  "House Bill": {desc: "A proposed law introduced in a state or federal House of Representatives -- HB 3320 has NOT taken effect; it is still up for a vote, which is exactly the vote Congresswoman Edmunds is about to cast.",
+    link: "https://www.usa.gov/how-laws-are-made"},
+  "Bipartisan": {desc: "Supported by members of more than one political party at once -- HB 3320 was introduced by legislators from both sides, which is why the real fight in this case is over how much to change, not whether to change anything.",
+    link: "https://www.congress.gov/help/legislative-glossary"},
+  "Constituents": {desc: "The people who live in an elected official's district and whom that official represents -- the 240 people Edmunds's office polled in Appendix D are her own constituents, not a statewide sample.",
+    link: "https://www.congress.gov/help/legislative-glossary"},
+  "Bloc": {desc: "A group of legislators who tend to vote the same way on a given issue -- Edmunds is expected to sway a \"bloc\" of undecided rural members, meaning several of them at once, not just one.",
+    link: "https://www.congress.gov/help/legislative-glossary"},
+  "Gentlewoman": {desc: "The formal way a member of the House addresses a female colleague on the floor (\"gentleman\" for a male colleague) -- it is a title of parliamentary courtesy, not a comment on manners.",
+    link: "https://www.house.gov/the-house-explained"},
+  "Family Auto Policy": {desc: "The insurance contract a family holds on its car(s) -- adding a new driver (like a newly-licensed 16-year-old) to an existing policy is what raises its premium, rather than buying a brand-new policy.",
+    link: "https://www.investopedia.com/terms/i/insurance.asp"},
+  "Ride-Shares": {desc: "App-based services (like Uber or Lyft) where a rider pays a driver for a one-off trip in their personal car -- one of the transportation options urban teens have that rural teens typically do not.",
+    link: "https://en.wikipedia.org/wiki/Ridesharing_company"},
+  "VMT": {desc: "Vehicle-Miles-Traveled -- the standard federal measurement for how far vehicles are driven, added up across all cars. Appendix C's 11,026 mi/year figure is this same quantity, just called \"average annual miles driven\" in the plain-English table above.",
+    link: "https://afdc.energy.gov/data/10309"},
+  "Graduated Driver License (GDL)": {desc: "A real, common U.S. system that phases a new teen driver through stages -- supervised permit, then restricted independent driving, then full privileges -- instead of handing over a full license all at once. Arizona's current law (Appendix A) is a GDL system; HB 3320 would replace it with a single age cutoff.",
+    link: "https://www.iihs.org/topics/teenagers#graduated-licensing"},
+  "Premium": {desc: "The amount a policyholder pays -- usually per year or per month -- to keep an insurance policy active. Appendix C's $4,050 figure is how much a family's ANNUAL premium rises after adding a 16-year-old driver, not a one-time fee.",
+    link: "https://www.investopedia.com/terms/i/insurance-premium.asp"},
+  "Class D License": {desc: "The standard license class for driving an ordinary passenger car in most U.S. states, including Arizona -- distinct from a commercial license. HB 3320 changes who may hold one, not what it allows once issued.",
+    link: "https://en.wikipedia.org/wiki/Driver%27s_licenses_in_the_United_States"},
+  "The House Floor": {desc: "The main chamber where a state or federal House of Representatives formally debates and votes on bills -- \"taking the floor\" means being recognized by the Speaker to speak, exactly what is about to happen to Congresswoman Edmunds in the Overview.",
+    link: "https://www.house.gov/the-house-explained"},
+  "Speaker": {desc: "The member who presides over the House floor, decides who is recognized to speak next, and bangs the gavel to call the chamber to order -- the Speaker is the one who says \"the House recognizes the gentlewoman from Queen Creek\" in the Overview.",
+    link: "https://www.house.gov/leadership"},
+  "AYE": {desc: "A spoken \"yes\" vote on the floor -- Edmunds voting AYE means voting FOR HB 3320 (raising the age to 18). The opposite is NAY, a spoken \"no\" vote, which means voting to keep the current law.",
+    link: "https://www.house.gov/the-house-explained"},
+  "Amendment": {desc: "A formal proposed change to a bill's text, debated and voted on separately before the bill itself -- the \"amendment copies\" a clerk is stacking in the Overview are printed drafts of these proposed changes, not the bill itself.",
+    link: "https://www.congress.gov/help/legislative-glossary"},
+  "Instruction Permit": {desc: "Arizona's own name for the first, supervised stage of its Graduated Driver License system (Appendix A) -- the same general idea most states call a \"learner's permit,\" just under Arizona's specific label. It requires a licensed adult 21+ in the car; it is not independent driving.",
+    link: "https://azdot.gov/mvd/services/driver-services/teen-drivers/permit-and-license-requirements"},
+  "Gavel": {desc: "A small mallet the Speaker taps to call the House to order, open debate, or mark a vote -- a real, physical object used on the floor, not a figure of speech.",
+    link: "https://www.house.gov/the-house-explained"},
+  "Clerk": {desc: "A House staff member (not an elected member) who handles the paperwork of the floor session -- printing and distributing amendment copies, and calling the roll for a vote (reading each member's name aloud, one by one, so they can answer AYE or NAY on the record) -- and keeping the official record.",
+    link: "https://www.house.gov/the-house-explained"},
+  "Tally Board": {desc: "The electronic display on the House floor that shows each member's recorded vote (AYE/NAY/present) as it comes in -- it starts blank at the top of a vote and fills in live as members vote.",
+    link: "https://www.house.gov/the-house-explained"},
+};
+
+/* ================================================================
+   CASE-AGNOSTIC — glossary renderer. T1-19 special-cases this exact
+   function; do not rename gtermHTML/renderGlossary or change the
+   emitted markup shape (class="gterm", <span class="tip">).
+   ================================================================ */
+function gtermHTML(label, textOverride){
+  const g = GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="gterm" data-term="${label}" href="${g.url}" target="_blank" rel="noopener">${text}<span class="tip">${g.def}<span class="go">Open a lesson on this &rarr;</span></span></a>`;
+}
+function renderGlossary(){
+  document.getElementById('glossaryVocab').innerHTML = Object.keys(GLOSSARY).map(k => gtermHTML(k)).join('');
+  document.getElementById('glossaryHowto').innerHTML = HOWTO.map(([phrase, key]) => `<li>${gtermHTML(key, phrase)}</li>`).join('');
+}
+renderGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC-SHAPED — STORY-glossary renderer, a parallel of
+   gtermHTML/renderGlossary above using class="sterm" and the
+   desc/link property names instead of def/url (see STORY_GLOSSARY
+   comment above for why this must stay a separate shape).
+   ================================================================ */
+function stermHTML(label, textOverride){
+  const g = STORY_GLOSSARY[label];
+  if(!g) return textOverride || label;
+  const text = textOverride || label;
+  return `<a class="sterm" data-term="${label}" href="${g.link}" target="_blank" rel="noopener">${text}<span class="tip">${g.desc}<span class="go">See the real source &rarr;</span></span></a>`;
+}
+function renderStoryGlossary(){
+  const el = document.getElementById('storyGlossaryVocab');
+  if(el) el.innerHTML = Object.keys(STORY_GLOSSARY).map(k => stermHTML(k)).join('');
+}
+renderStoryGlossary();
+
+/* ================================================================
+   CASE-AGNOSTIC — auto-link every glossary concept where it's actually
+   used, not just in the Appendix G list. Walks the case-specific prose
+   (Overview, Background, Dilemma, Challenges, Appendices, Notebook,
+   Twist) for the FIRST plain-text mention of each GLOSSARY key (case
+   -insensitive, tolerates a simple trailing "s" the way case-reconcile's
+   own term matcher does) and wraps just that one mention in the same
+   hover+hyperlink treatment renderGlossary() builds for Appendix G --
+   so a reader hits the explanation right where the concept is actually
+   used, not only in a list at the bottom. A term already wrapped by
+   hand (a static gterm with data-term="Label", e.g. if an author wants
+   a SPECIFIC occurrence linked rather than whichever comes first) is
+   left alone and skips the auto-linker's later, generic pass for that
+   same term. Never touches the Appendix G glossary block itself
+   (#apx-glossary), form controls, or anything already inside a gterm.
+   This satisfies MCS-39's actual ask ("hover and hyperlinks... on any
+   concepts that need explanation") beyond what a standalone glossary
+   list alone provides -- it does not change what T1-19 checks (still
+   the GLOSSARY object + Appendix G), it makes the rest of the page
+   actually use it.
+   ================================================================ */
+function autoLinkGlossaryTerms(containerSelectors){
+  const linked = new Set();
+  // Seed ONLY from a gterm an author placed by hand OUTSIDE the standing Appendix G
+  // list -- Appendix G's own anchors (renderGlossary(), just above) list every term
+  // by design and must NOT count as "already linked" or nothing would ever auto-link.
+  document.querySelectorAll('.gterm[data-term]').forEach(a => {
+    if(!a.closest('#apx-glossary')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, .sterm, #apx-glossary, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = gtermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkGlossaryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+
+/* ================================================================
+   CASE-AGNOSTIC-SHAPED — STORY-glossary auto-linker, a parallel of
+   autoLinkGlossaryTerms() above over STORY_GLOSSARY/class="sterm"
+   instead of GLOSSARY/class="gterm". Seeds from the Background's own
+   #storyGlossaryVocab grid so this pass only catches remaining
+   first-mentions elsewhere in the case (e.g. the Overview's "House
+   floor" or the Dilemma's "AYE on HB 3320"). Never touches a .gterm
+   span or the math glossary block.
+   ================================================================ */
+function autoLinkStoryTerms(containerSelectors){
+  const linked = new Set();
+  document.querySelectorAll('.sterm[data-term]').forEach(a => {
+    if(!a.closest('#storyGlossaryVocab')) linked.add(a.dataset.term);
+  });
+
+  const terms = Object.keys(STORY_GLOSSARY).sort((a, b) => b.length - a.length);
+  if(!terms.length) return;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const master = new RegExp('\\b(' + terms.map(t => esc(t) + 's?').join('|') + ')\\b', 'gi');
+  const keyFor = raw => terms.find(t => raw.toLowerCase() === t.toLowerCase() || raw.toLowerCase() === (t + 's').toLowerCase());
+
+  const skip = 'script, style, .gterm, .sterm, #apx-glossary, #storyGlossaryVocab, button, input, select, textarea, label';
+  const roots = [];
+  containerSelectors.forEach(sel => document.querySelectorAll(sel).forEach(el => roots.push(el)));
+
+  roots.forEach(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if(!p || p.closest(skip)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let n; while((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(node => {
+      const text = node.nodeValue;
+      master.lastIndex = 0;
+      let m, lastEnd = 0, frag = null;
+      while((m = master.exec(text))){
+        const key = keyFor(m[0]);
+        if(!key || linked.has(key)) continue;
+        linked.add(key);
+        if(!frag) frag = document.createDocumentFragment();
+        if(m.index > lastEnd) frag.appendChild(document.createTextNode(text.slice(lastEnd, m.index)));
+        const span = document.createElement('span');
+        span.innerHTML = stermHTML(key, m[0]);
+        frag.appendChild(span.firstChild);
+        lastEnd = m.index + m[0].length;
+      }
+      if(frag){
+        if(lastEnd < text.length) frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  });
+}
+autoLinkStoryTerms(['#overview', '#background', '#dilemma', '#challenges', '#appendices', '#notebook', '#twist']);
+autoAddCSVButtons(CASE_ID);
+
+/* ================================================================
+   CASE-AGNOSTIC — twist reveal/apply gating. Reuse the reveal step
+   as-is; wire onTwistToggle() to whatever recompute your case's
+   twist needs (usually: re-run the Step 3/4 ledger with a param
+   from evaluate_twist() instead of evaluate()).
+   ================================================================ */
+function revealTwist(){
+  document.getElementById('twistNarrative').style.display='block';
+  document.getElementById('twistBtn').disabled = true;
+  document.getElementById('twistBtn').textContent = 'Revealed';
+}
+
+function onTwistToggle(){
+  const on = document.getElementById('applyTwist').checked;
+  let noteEl = document.getElementById('twistComputedNote');
+  if(!noteEl){
+    noteEl = document.createElement('p');
+    noteEl.id = 'twistComputedNote';
+    noteEl.style.color = '#f2ede0';
+    document.getElementById('twistNarrative').appendChild(noteEl);
+  }
+  if(on){
+    const out = evaluate_twist({});
+    noteEl.textContent = out.twist_note;
+  } else {
+    noteEl.textContent = '';
+  }
+}
+
+
+/* ================================================================
+   CASE-AGNOSTIC — tab-nav active-section tracking. Keep `secs` in
+   sync with the <nav class="tabs"> hrefs and the <section id="...">
+   elements above.
+   ================================================================ */
+const secs = ['overview','background','dilemma','challenges','appendices','notebook','twist'];
+const tablinks = document.querySelectorAll('#tabnav a');
+window.addEventListener('scroll', ()=>{
+  let cur = secs[0];
+  for(const id of secs){ const el=document.getElementById(id); if(el && el.getBoundingClientRect().top < 120) cur = id; }
+  tablinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+}, {passive:true});
+</script>
+</body>
+</html>

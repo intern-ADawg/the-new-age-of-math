@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PRD — Math Builder</title>
+<style>
+:root{--bg:#fafaf7;--panel:#fff;--ink:#1c1f24;--mute:#5d6672;--line:#e3e1d8;--accent:#1f5fbf;--accent-bg:#e8f0fc;--ok:#1d7a46;--ok-bg:#e3f4ea;--warn:#a05a00;--warn-bg:#fdf0dc;--no:#a32c2c;--no-bg:#fbe7e7;--code:#f1efe8}
+@media (prefers-color-scheme:dark){:root{--bg:#14161a;--panel:#1b1e23;--ink:#e8e8e4;--mute:#9aa3ae;--line:#2c3037;--accent:#7aa8f0;--accent-bg:#1c2a42;--ok:#6fd39a;--ok-bg:#16301f;--warn:#f0b35e;--warn-bg:#35280f;--no:#f08a8a;--no-bg:#381a1a;--code:#23262c}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:24px 16px 80px}
+header.top{border-bottom:2px solid var(--ink);padding-bottom:16px;margin-bottom:8px}
+h1{font-size:2rem;margin:0 0 4px;line-height:1.2}
+h2{font-size:1.45rem;margin:2.4rem 0 .6rem;padding-top:.4rem;border-top:1px solid var(--line)}
+h3{font-size:1.12rem;margin:1.6rem 0 .4rem}
+h4{margin:1rem 0 .2rem;font-size:1rem}
+p,li{max-width:76ch}
+a{color:var(--accent)}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.88em}
+.meta{color:var(--mute);font-size:.92rem}
+.pill{display:inline-block;font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:99px;vertical-align:middle;margin-left:4px;white-space:nowrap}
+.built{background:var(--ok-bg);color:var(--ok)}.part{background:var(--warn-bg);color:var(--warn)}.todo{background:var(--no-bg);color:var(--no)}.info{background:var(--accent-bg);color:var(--accent)}
+.tablewrap{overflow-x:auto;margin:.6rem 0 1rem}
+table{border-collapse:collapse;width:100%;font-size:.92rem;background:var(--panel)}
+th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+th{background:var(--code);font-weight:600}
+.callout{background:var(--accent-bg);border-left:4px solid var(--accent);padding:10px 14px;border-radius:0 6px 6px 0;margin:1rem 0}
+.callout.warn{background:var(--warn-bg);border-color:var(--warn)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px 18px 12px;margin:1.2rem 0}
+.card>h3{margin-top:.9rem}
+.story{font-style:italic;color:var(--mute)}
+.chat{background:var(--code);border-radius:8px;padding:10px 14px;font-size:.93rem}
+.chat p{margin:.3rem 0}
+nav.toc{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 18px;margin:1rem 0;columns:2;column-gap:28px;font-size:.93rem}
+nav.toc a{display:block;text-decoration:none;padding:1px 0}
+@media (max-width:640px){nav.toc{columns:1}h1{font-size:1.6rem}}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:1rem 0}
+.grid3>div{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+.grid3 b{display:block;margin-bottom:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+<h1>Product Requirements — Math Builder</h1>
+<div class="meta"><b>Version 2.0 · 2026-11-06 · Status: DRAFT for Manan's review.</b> Supersedes PRD v1.0 (<code>PRD.md</code>, 2026-10-19), rewritten around VISION v2.1 (2026-10-24) and the build status of 2026-11-03.</div>
+<div class="meta">Companions: <a href="VISION.md">VISION.md</a> (why) · <a href="ROADMAP.md">ROADMAP.md</a> (when, and the live status board) · <a href="DECISIONS.md">DECISIONS.md</a> (D-021…D-025) · <a href="RUBRIC.md">RUBRIC.md</a> · <a href="POLICY_PRELIMINARY.md">POLICY_PRELIMINARY.md</a>. This file is the <i>what</i>: requirements <code>R1–R14</code>, acceptance criteria, risks. Requirement ids are cited by the roadmap and decisions, so they are stable.</div>
+</header>
+
+<nav class="toc">
+<a href="#vision">1. Vision this PRD serves</a>
+<a href="#changes">2. What changed from v1.0</a>
+<a href="#problem">3. Problem</a>
+<a href="#users">4. Who we build for</a>
+<a href="#journey">5. The Hero's journey</a>
+<a href="#guide">6. The guide's role</a>
+<a href="#status">7. Status of requirements</a>
+<a href="#feedback">8. Feedback traceability</a>
+<a href="#reqs">9. Requirements R1–R14</a>
+<a href="#examples">10. Worked examples</a>
+<a href="#principles">11. Design principles</a>
+<a href="#nfr">12. Non-functional requirements</a>
+<a href="#success">13. Success metrics</a>
+<a href="#assumptions">14. Riskiest assumptions</a>
+<a href="#course">15. When we'd change course</a>
+<a href="#risks">16. AI-in-learning risks and non-goals</a>
+<a href="#decisions">17. Decisions and open questions</a>
+</nav>
+
+<!-- 1 ------------------------------------------------------------------>
+<h2 id="vision">1. Vision this PRD serves</h2>
+<p><b>Students experience math in the real world.</b> Each case is a real decision with real numbers, so that a learner (a <b>Hero</b>):</p>
+<div class="grid3">
+<div><b>1. Solidifies math concepts</b>by needing them to defend a choice, not by practicing in isolation.</div>
+<div><b>2. Learns to structure real-world problems</b>decide what the question is, what to ignore, what to assume, what is still unknown.</div>
+<div><b>3. Gains exposure to fields and careers</b>an actuary, a crop analyst, a bridge engineer, and finds something to be curious about.</div>
+</div>
+<p>Underneath all three is <b>confidence in complex problem solving</b>: a Hero finishes believing "I can take a messy, unfamiliar problem and make progress," with evidence in their own history. Product and platform exist to reach more learners and subjects; they serve the purpose, they are not the purpose.</p>
+<p><b>Terms.</b> <i>Guide</i> = the human (the feedback calls them "the coach"). <i>Coach.AI</i> = the AI that works with a Hero inside a case. <i>Hero</i> = the learner (MS/HS).</p>
+
+<h3>First deployment: The Humanist Academy</h3>
+<p>Get the platform running at The Humanist Academy, then <b>take the guide out of the blocking and tackling</b> (assigning, tracking, chasing, reporting) so the guide's time goes to <b>helping Heroes with hard concepts and getting started on a case</b>. This makes guide-free operations (R13) a priority ahead of leaderboard polish. The Academy's program, cohort size, grade levels, guide workflow and tools are <b>not yet known</b> and are the first discovery item (Roadmap S1).</p>
+
+<h3>Three stages</h3>
+<div class="tablewrap"><table>
+<tr><th></th><th>Tool (built)</th><th>Product (this PRD)</th><th>Platform (later)</th></tr>
+<tr><td>Serves</td><td>One author-operator and one guide</td><td>Heroes, guides, parents in a cohort</td><td>Any studio; any subject</td></tr>
+<tr><td>Learner experience</td><td>Static page; client-side "Check"</td><td>Coach.AI dialogue per step; end-of-case summary with feedback; journey tracker, profile, points</td><td>Same loop in other subjects and fields</td></tr>
+<tr><td>Guide's time goes to</td><td>Operations</td><td>Hard concepts, getting started; exceptions only</td><td>Same, across more cohorts</td></tr>
+<tr><td>Grading</td><td>Machine first pass, guide confirms</td><td>AI-drafted against rubric K1–K6; guide confirms</td><td>Per-subject graders</td></tr>
+<tr><td>Biggest risk</td><td>Quality we can't see</td><td>Trust: answer leaks, mis-grading, children's data</td><td>Generalizing before one subject is proven</td></tr>
+</table></div>
+
+<h3>How requirements serve the vision</h3>
+<div class="tablewrap"><table>
+<tr><th>Vision goal</th><th>Requirements that deliver it</th></tr>
+<tr><td>Solidify concepts (defend a choice)</td><td>R1 clear instructions · R2 Coach.AI · R3 rubric K2/K4 · R12 warm-up on prerequisite skills</td></tr>
+<tr><td>Structure real-world problems</td><td>R3 rubric K1/K3 · R12 word-problem scaffold · R11 reasoning-trail grading · five-part pitch shape (§5)</td></tr>
+<tr><td>Exposure to fields and careers</td><td>R3 rubric K6 · R4 fields explored, careers card · R5 profile and recommended next case</td></tr>
+<tr><td>Confidence, with evidence</td><td>R5 profile and history · R4 growth points · R9 event log (pre/post confidence self-rating, tracked not graded)</td></tr>
+<tr><td>Guide freed for hard concepts</td><td>R13 guide-free operations · R14 home and next step · R8 the room · R6 stuck data to guide</td></tr>
+<tr><td>Independence from the guide over time</td><td>R2 hint ladder · R12 warm-up · R14 weekly rhythm · metric: share of steps resolved without a human</td></tr>
+<tr><td>Trust (children, AI)</td><td>R5 identity and consent · R2 leak/injection gates · R3 calibration · POLICY_PRELIMINARY.md</td></tr>
+<tr><td>More learners and subjects</td><td>R7 platform seam · R10 author surface (Phase 4, gated on a proven first loop)</td></tr>
+</table></div>
+
+<!-- 2 ------------------------------------------------------------------>
+<h2 id="changes">2. What changed from v1.0</h2>
+<ul>
+<li><b>Vision-first framing.</b> Opens with the purpose, first deployment and stages (VISION v2.1), plus a goal→requirement map. v1.0 opened with the problem only.</li>
+<li><b>Status column.</b> Each requirement now carries built / tested / UAT state from the 2026-11-03 status board. Coach.AI v1 and the event log exist; the submission engine and server routes exist; identity and consent do not.</li>
+<li><b>Pilot is two cases, not three</b> (D-025): <code>phone-plan</code> and <code>tide-window</code>. <code>field-watch</code> was dropped (fails the cold-read without a redesign). A third case is still to be chosen, favoring live free data and a domain far from consumer finance and maritime.</li>
+<li><b>R3 rewritten</b> to reflect the submission redesign (<code>mb-submission/1</code>, commit <code>e319f9e</code>): one submit path, Answer/Why per deliverable, server-side routes, 10 cases migrated. AI notes grading is still unbuilt.</li>
+<li><b>R2 updated</b> to what shipped (D-025): serve-time widget injection, no verdicts, model path built but not live.</li>
+<li><b>Added:</b> Hero's journey (9 stops) and five-part pitch shape, the guide-role table, riskiest assumptions 1–10, change-course triggers, and independence/guide-time metrics.</li>
+<li><b>Kept, condensed:</b> all requirements R1–R14, worked examples, and feedback traceability (rounds 1 and 2).</li>
+</ul>
+
+<!-- 3 ------------------------------------------------------------------>
+<h2 id="problem">3. Problem</h2>
+<p>The authoring pipeline reliably produces rigorous cases, but the <b>learner's moment</b> inside a case was thin: a static page with "Check" buttons that say right/wrong. A stuck learner had no help; a confused learner couldn't tell whether the case or they were at fault; finishing meant exporting files for a guide to score by hand. And the guide spends time on operations (picking cases, chasing, tracking, reporting) rather than on the concepts Heroes find hard.</p>
+<p>The first outside user (Anuj, 2026-10-17) called it "a great tool," and with a few tweaks, a product. <b>Honest baseline:</b> no real cohort has used the system; zero cases are <code>VERIFIED</code> (MCS-29); the first outside feedback found real defects the gates missed. So: make the learner's experience inside a case excellent, prove it with real kids on a few cases, then widen.</p>
+
+<!-- 4 ------------------------------------------------------------------>
+<h2 id="users">4. Who we build for</h2>
+<div class="tablewrap"><table>
+<tr><th>Role</th><th>Who</th><th>Wants</th><th>Decides?</th></tr>
+<tr><td>User</td><td>Hero (MS/HS learner)</td><td>Get unstuck without being told; be taken seriously; see own growth</td><td>No</td></tr>
+<tr><td>Buyer / champion</td><td>Guide, studio head, homeschool parent</td><td>Less prep and grading; know where to focus; evidence of growth</td><td>Yes</td></tr>
+<tr><td>Influencer</td><td>Parents (Anuj is the prototype)</td><td>Proof the child learns real reasoning and finds interests</td><td>Shapes adoption</td></tr>
+<tr><td>Author</td><td>Us, then other guides</td><td>Real-use data flowing back into case quality</td><td>n/a</td></tr>
+</table></div>
+<p><b>Wedge:</b> quantitative real-world cases for MS/HS in self-directed settings, starting with The Humanist Academy, then Acton-style studios, microschools, pods, co-ops. <b>Rings:</b> (1) one household, pilot cases; (2) the Humanist Academy cohort with operations automated; (3) other studios; (4) other subjects and the platform.</p>
+
+<!-- 5 ------------------------------------------------------------------>
+<h2 id="journey">5. The Hero's journey</h2>
+<p>The journey tracker is the spine of the product. Each stop writes to the Hero's profile and history (R9). <b>Every screen shows one clear next step</b> (R14).</p>
+<div class="tablewrap"><table>
+<tr><th>#</th><th>Stop</th><th>What happens</th><th>Req</th></tr>
+<tr><td>1</td><td>Pick or be assigned</td><td>Recommended from the Hero's journey (fields explored, skills, interests); automatic with guide override</td><td>R13, R5</td></tr>
+<tr><td>2</td><td>Warm-up, as needed</td><td>Short case-scoped readiness check; early wins; targeted drills; word-problem scaffold if translation is the gap. Strong Heroes skip.</td><td>R12</td></tr>
+<tr><td>3</td><td>Kickoff</td><td>Just enough of the problem's world before any data; first vote committed before reasoning</td><td>R1</td></tr>
+<tr><td>4</td><td>Work steps with Coach.AI</td><td>A dialogue, not a form. Wrong answer names the <i>kind</i> of mistake; stuck gets a hint; the final answer is never given. Tough step gets broken into smaller pieces.</td><td>R2</td></tr>
+<tr><td>5</td><td>Summary</td><td>Pitch in a five-part shape; Coach.AI responds in rubric language, provisional until the guide confirms</td><td>R3, R11</td></tr>
+<tr><td>6</td><td>Discuss</td><td>Live Socratic room: twist, re-vote, cold-calls. Guide arrives knowing where the room got stuck.</td><td>R8</td></tr>
+<tr><td>7</td><td>Reflect and give feedback</td><td>What was new, confusing, what they want to explore; confidence self-rating</td><td>R6</td></tr>
+<tr><td>8</td><td>Points, profile, history</td><td>Effort, depth, persistence earn points; profile shows growth</td><td>R4, R5</td></tr>
+<tr><td>9</td><td>Next assignment</td><td>Returns to stop 1</td><td>R13</td></tr>
+</table></div>
+<p><b>The summary pitch has a shape</b> (also teaches a Hero to talk about a solution): (1) the underlying problem and why it matters; (2) the position, in plain language; (3) a simple, relatable example of how it works; (4) what makes this option better than the other, and what would change the Hero's mind; (5) the outcomes and implications, with method and assumptions underneath. Maps to rubric K1, K3, K4. The same shape is our outward pitch to The Humanist Academy and parents.</p>
+<p><b>The learning workout.</b> We take immediate feedback, visible progress, weekly goals, progressive difficulty and accountability digests from Duolingo, Omada and workout apps, and wrap them <i>around</i> the case (a deep 2–3 hour decision). We do <b>not</b> take loss-aversion mechanics (hearts, shame streaks), rewards for raw activity volume, or leaderboards on raw score.</p>
+
+<!-- 6 ------------------------------------------------------------------>
+<h2 id="guide">6. The guide's role</h2>
+<div class="tablewrap"><table>
+<tr><th>Today the guide does</th><th>The platform should do</th><th>The guide keeps</th></tr>
+<tr><td>Picks and assigns the next case</td><td>Recommends and assigns from the Hero's journey (<code>suggest_cases()</code> already ranks by interests, grade, branch)</td><td>Override and approve</td></tr>
+<tr><td>Tracks who is behind or stuck</td><td>Tracks, reminds, reports; surfaces <b>exceptions only</b> (OVERDUE, STALE, NO OPEN WORK already flagged)</td><td>Acting on an exception</td></tr>
+<tr><td>Chases late work, writes updates</td><td>Nudges the Hero in-app; parent/guide digest</td><td>Conversations that need a person</td></tr>
+<tr><td>Confirms every score and badge</td><td>AI drafts, calibrated; guide confirms (light check, then sampled as agreement is proven)</td><td>Final say on badges</td></tr>
+<tr><td><b>Explaining hard concepts, unsticking a Hero at the start</b></td><td>Tells the guide <i>which Hero is stuck on which concept</i>, with what they tried</td><td><b>This is the job</b></td></tr>
+</table></div>
+<p>Per case the guide needs: the <b>core skill behind each step</b>, an <b>assessment of each Hero per skill</b>, who is stuck on what and what they tried, who hasn't started, suggested focus, named strengths, and the Heroes' own feedback. The guide's home is an <b>exception list</b>, not a spreadsheet (R8, R13).</p>
+
+<!-- 7 ------------------------------------------------------------------>
+<h2 id="status">7. Status of requirements</h2>
+<p class="meta">From the ROADMAP status board (2026-11-03) and git history. "Built" = code exists; "Tested" = automated tests pass; "UAT" = walked live in a browser as that persona. Re-derive before relying on it.</p>
+<div class="tablewrap"><table>
+<tr><th>Req</th><th>Summary</th><th>Phase</th><th>State</th><th>Evidence / what's missing</th></tr>
+<tr><td>R1</td><td>Instruction clarity, scenario consistency</td><td>0</td><td><span class="pill part">Reference fix only</span></td><td><code>phone-plan</code> fixed and verified (<code>7fe1a04</code>). Defect-class sweep and Tier 1 lint not started; needs DOCTRINE_LEDGER row.</td></tr>
+<tr><td>R2</td><td>Coach.AI</td><td>1a</td><td><span class="pill built">v1 built, tested, UAT</span></td><td>Catalog + hint ladder + dialogue, 35 tests incl. leak/injection across all 4 <code>phone-plan</code> steps. <b>Model tail built but NOT live</b>: no paid API key; free text answers "hint-only mode". Not on <code>tide-window</code> yet.</td></tr>
+<tr><td>R3</td><td>Submit and grade</td><td>1b</td><td><span class="pill part">Submit built; AI grading not</span></td><td><code>mb-submission/1</code> engine, server routes, 10 cases migrated (<code>e319f9e</code>). Rubric K1–K6, gold set, AI notes feedback and calibration not built.</td></tr>
+<tr><td>R4</td><td>Points, leaderboard</td><td>2</td><td><span class="pill todo">Not started</span></td><td>Depends on R9 events (partly there) and R5 profiles.</td></tr>
+<tr><td>R5</td><td>Identity, privacy, consent; profile</td><td>1a</td><td><span class="pill todo">Not started</span></td><td>Heroes are an opaque browser id or typed learner id. <b>Must precede any non-author child using the Coach.</b></td></tr>
+<tr><td>R6</td><td>Telemetry, feedback loop</td><td>0→</td><td><span class="pill part">Partial</span></td><td>"This was confusing" control and guide page <code>/coach-log/&lt;case&gt;</code> exist. Stuck heatmap and case-readiness feed not built.</td></tr>
+<tr><td>R7</td><td>Platform seam</td><td>4</td><td><span class="pill info">Deferred</span></td><td>Light prep only: case-specific inputs kept to <code>case.json</code>, sensitivity model, misconceptions.</td></tr>
+<tr><td>R8</td><td>The room</td><td>2</td><td><span class="pill todo">Not started</span></td><td>Discussions logged after the fact today.</td></tr>
+<tr><td>R9</td><td>Event log</td><td>0</td><td><span class="pill part">v1 built, tested, UAT</span></td><td>Coach turns, step opens, confusion and Coach opens. <b>Missing:</b> attempts, submit events, per-field timing.</td></tr>
+<tr><td>R10</td><td>Author surface</td><td>4</td><td><span class="pill info">Deferred</span></td><td>Pipeline skills are the engine.</td></tr>
+<tr><td>R11</td><td>Authentic-work design</td><td>1b</td><td><span class="pill todo">Not started</span></td><td>Needs attempt events (R9) first.</td></tr>
+<tr><td>R12</td><td>Warm-up and word-problem scaffold</td><td>1a</td><td><span class="pill todo">Not started</span></td><td>Needs per-step <code>primary_skill</code> tags on pilot cases.</td></tr>
+<tr><td>R13</td><td>Guide-free operations</td><td>1c</td><td><span class="pill todo">Not started</span></td><td>Builds on existing <code>suggest_cases()</code> and exception queue. Blocked on discovery with the Academy (S1).</td></tr>
+<tr><td>R14</td><td>Home, next step, rhythm, nudges</td><td>1c→2</td><td><span class="pill todo">Not started</span></td><td></td></tr>
+</table></div>
+<p><b>Pilot readiness:</b> <code>phone-plan</code> TIER2_PASS, live-browser verified. <code>tide-window</code> passes Tier 2 on branch <code>claude/pilot-tide-window-b89b71</code> but is <b>not merged</b>; main moved with the submission redesign, so the port is its own task. Real case with Anuj's kids: blocked on the consent path (R5) and a model-key decision.</p>
+
+<!-- 8 ------------------------------------------------------------------>
+<h2 id="feedback">8. Feedback traceability</h2>
+<h3>Round 1 — Anuj, 2026-10-17 (example case: <code>phone-plan</code>)</h3>
+<div class="tablewrap"><table>
+<tr><th>#</th><th>Feedback</th><th>Verified in repo?</th><th>Becomes</th></tr>
+<tr><td>F1</td><td>Add a chatbot for hints and help</td><td>Did not exist</td><td>R2</td></tr>
+<tr><td>F2</td><td>Twist unclear: is the 8% tax expected again?</td><td><b>Real defect</b>: Step 4 never said</td><td>R1 (fixed in <code>phone-plan</code>)</td></tr>
+<tr><td>F3</td><td>"Check both" lets the bot reverse-engineer the method and hint toward the answer</td><td>Step 1 returned right/wrong only</td><td>R2 diagnostic engine</td></tr>
+<tr><td>F4</td><td>Twist should reuse the chosen line count</td><td><b>Real defect</b>: hard-wired to 2 lines</td><td>R1 (fixed in <code>phone-plan</code>)</td></tr>
+<tr><td>F5</td><td>One-click submit, AI-graded on numbers and a small share for note quality</td><td>Was PDF export only</td><td>R3 (notes assessed in K1/K3/K5, inside the gate)</td></tr>
+<tr><td>F6</td><td>Leaderboard, stars, badges</td><td>Guide-level badges only</td><td>R4</td></tr>
+<tr><td>F7</td><td>Tool → product → platform; other subjects</td><td>—</td><td>R7 + stages</td></tr>
+<tr><td>F8</td><td>Integrate with the whole Acton system</td><td>Unknown surface</td><td>Discovery (Phase 3)</td></tr>
+<tr><td>F9</td><td>Offered to help develop and test with kids</td><td>—</td><td>Track A3, first real learner</td></tr>
+<tr><td>F10</td><td>Share marketing-tech comparisons</td><td>—</td><td>Roadmap S2</td></tr>
+</table></div>
+<p class="meta">Anuj's description (8% tax, "twist," "check both") matches <code>cases/phone-plan</code> (Idaho), not <code>phone-plans</code> (Oregon). Worth confirming with him.</p>
+
+<h3>Round 2 — second outside review, weighed 2026-10-24 (D-024)</h3>
+<p>Each item was tested against the existing direction, not adopted by recency.</p>
+<div class="tablewrap"><table>
+<tr><th>Feedback</th><th>Decision</th></tr>
+<tr><td>Module 1: refresher and skill assessment before the case</td><td><b>Adopt, scoped.</b> Case-scoped warm-up from the case's own skills; skippable; pilot skills first (R12)</td></tr>
+<tr><td>Module 2: word problems, translate into steps</td><td><b>Adopt, as needed.</b> Short scaffold triggered by warm-up or step-1 struggle (R12)</td></tr>
+<tr><td>Independence; Duolingo / Omada / workout models</td><td><b>Adapt</b> around the case; reject loss-aversion and volume rewards (§5)</td></tr>
+<tr><td>A. Navigation and usability</td><td><b>Adopt.</b> R14</td></tr>
+<tr><td>B. Compliance and consistency (routines)</td><td><b>Adopt, high priority.</b> R13</td></tr>
+<tr><td>C. Coaching and motivation without constant guide involvement</td><td><b>Adopt.</b> In-app nudges for the Hero; email only to parent or guide (R14)</td></tr>
+<tr><td>D. Gamification: persistence, mastery, improvement</td><td><b>Adopt.</b> R4 updated; grace-week streaks</td></tr>
+<tr><td>Pitch structure (five parts)</td><td><b>Adopt both</b> ways: Hero scaffold and our outward pitch. Which was meant is still to confirm</td></tr>
+<tr><td>Strategy: habit-forming, personalized, measurable</td><td><b>Adapt.</b> Habit mechanics serve real-problem confidence; not a daily practice app</td></tr>
+<tr><td>Closing goal: run at The Humanist Academy, then remove the guide from assignment and tracking</td><td><b>Adopt as the primary go-to-market goal.</b> R13, Phase 1c</td></tr>
+</table></div>
+
+<!-- 9 ------------------------------------------------------------------>
+<h2 id="reqs">9. Requirements</h2>
+
+<div class="card">
+<h3 id="r1">R1 — Instruction clarity and scenario consistency <span class="pill info">Phase 0</span><span class="pill part">Reference fix done</span></h3>
+<p class="story">As a Hero, I always know exactly what a step asks, and a later step builds on my own earlier choices instead of silently switching scenarios.</p>
+<ul>
+<li>Every graded step states <b>(a)</b> which scenario it uses, <b>(b)</b> whether tax/fees are included, <b>(c)</b> rounding/units.</li>
+<li>Twist and downstream steps <b>inherit the learner's selected scenario</b> (line count, option) or state why they are pinned.</li>
+</ul>
+<p><b>Acceptance.</b> A new Tier 1 lint (candidate <code>T1-xx</code>, needs a DOCTRINE_LEDGER row and critique pass) flags graded steps lacking tax/rounding/scenario statements when the case has such parameters. Case-readiness Tier 1+2 passes <i>and</i> a live browser pass is repeated. Sweep every published case with a selector or tax/fee parameter and a Twist step (expect more than one hit).</p>
+<p><b>Risk.</b> Touching published cases invalidates <code>case.json.qa</code> hashes; rebuild packets and re-run QA, never hand-edit published artifacts.</p>
+</div>
+
+<div class="card">
+<h3 id="r2">R2 — Coach.AI: hints and diagnosis <span class="pill info">Phase 1a</span><span class="pill built">v1 built</span></h3>
+<p class="story">As a stuck Hero, I can ask for help on the step I'm on and get a nudge that respects my thinking; on a wrong answer the Coach can often tell me which mistake that probably is.</p>
+<ol>
+<li><b>Misconception catalog (deterministic).</b> Per case, a list of "plausible wrong methods" per step, each a function that computes the wrong answer that method would produce (<code>forgot_tax</code>, <code>tax_applied_twice</code>, …). Learner input is matched against all candidates within rounding tolerance; a match gives a targeted hint. Catalog values are <b>recomputed in code</b>, never typed from a model. Shipped in <code>cases/phone-plan/misconceptions.py</code>.</li>
+<li><b>Hint ladder.</b> L1 nudge → L2 pointer → L3 worked <i>analogue</i> with different numbers. Never the case's answer. Advances on request; L3 requires an attempt first.</li>
+<li><b>Model for the long tail</b> phrases a Socratic question given step goal, learner input and the catalog, with a hard instruction not to reveal the key. Every model reply is filtered against the case key. Routing per 00_SESSION.md (Haiku first).</li>
+<li><b>Free-text "ask the coach"</b>, scoped to the current step and the case appendices; refuses off-topic and refuses to write the pitch.</li>
+</ol>
+<h4>Dialogue rules</h4>
+<ol>
+<li><i>Attempt before help.</i> No hint until the Hero entered a number or wrote the formula used.</li>
+<li><i>Ask for the method, not the number;</i> read the Hero's own formula back before diagnosing.</li>
+<li><i>One question per turn,</i> answerable from the page.</li>
+<li><i>Name the kind of mistake, never the operation.</i> "Looks like a pre-tax number" yes; "add the tax" no.</li>
+<li><i>Stop rules.</i> After two failed turns, offer a worked analogue. A correct method in words still needs the computation. On "just tell me," offer the analogue and don't debate.</li>
+<li><i>Never state a verdict</i> (a correct number gets a method question, not praise) and never return a graded value (D-025).</li>
+</ol>
+<p><b>Acceptance (release gates).</b></p>
+<ul>
+<li><b>Leak test:</b> automated adversarial prompts ("just tell me," prompt injection in notebook text) across every pilot step; <b>zero</b> responses contain the answer (± rounding) or a one-step equivalent. Passing today on <code>phone-plan</code> (35 tests).</li>
+<li><b>Key stays server-side.</b> The widget is injected at serve time; the page on disk is untouched, so manifest hashes and Tier 1 stay valid.</li>
+<li><b>Cost/abuse:</b> per-student and per-case rate limits; hard monthly cap; graceful degrade to catalog-only hints when the model is unavailable. <span class="pill todo">Cap and kill switch need the paid key</span></li>
+<li><b>Logged for learning:</b> every hint request (step, level, matched catalog id or "tail") is stored (R9).</li>
+</ul>
+<p><b>Top failure modes to test:</b> answer extraction by rephrasing; validating a wrong method because the number is close; the model asserting a value is wrong when it has no key; a step-1 hint that hands over step 3; implicitly endorsing a pitch's conclusion.</p>
+<p><b>Open.</b> Port to <code>tide-window</code>. Authoring cost of a catalog per case is real; decide whether the author agent drafts candidates that code then verifies.</p>
+</div>
+
+<div class="card">
+<h3 id="r3">R3 — Submit and grade <span class="pill info">Phase 1b</span><span class="pill part">Submit built; AI grading not</span></h3>
+<p class="story">As a Hero, I click Submit and get prompt feedback tied to the rubric. As a guide, I get a drafted score I can confirm in seconds.</p>
+<p><b>Built (<code>mb-submission/1</code>, see SUBMISSION_REDESIGN_SPEC.md).</b> One submit path ("Build my submission"); an Answer box per deliverable and a required Why only at designated decision points (the Pitch plus at most two judgment deliverables); evidence rather than self-ticked checkboxes; both options visible side by side; guide-side verdicts only (the Hero never sees a verdict, MCS-37); twist pick frozen at first build; 10 cases migrated.</p>
+<p><b>Still to build.</b></p>
+<ul>
+<li><b>Numbers:</b> deterministic, server-side from the case key; per-step results; partial-credit logic stays in <code>score_submission.py</code>.</li>
+<li><b>Notes/pitch quality:</b> an LLM grader scores against the rubric with anchored descriptors (Not Yet / Proficient / Exemplary) and an evidence quote per criterion. The Hero sees rubric-language feedback labeled <b>"provisional until your guide confirms."</b></li>
+<li><b>Guide confirm</b> remains the gate for badges (MCS-12: machine drafts, human promotes).</li>
+</ul>
+<h4>Rubric that matches our goals (decided; K1–K6 proposed by the R1a review)</h4>
+<p>Keep a <i>mastery gate</i> (every criterion at least Proficient) separate from a <i>growth score</i> (weights untested).</p>
+<div class="tablewrap"><table>
+<tr><th></th><th>Criterion (weight)</th><th>Proficient looks like</th></tr>
+<tr><td>K1</td><td>Structure the problem (20)</td><td>Names the decision metric and variables; sets one given fact aside as irrelevant</td></tr>
+<tr><td>K2</td><td>Compute and deliver (15)</td><td>Every deliverable present; each number recomputes from the stated model; units carried</td></tr>
+<tr><td>K3</td><td>Handle assumptions and complexity (20)</td><td>Names each assumption the winner depends on, flexes one, reports whether the winner changes</td></tr>
+<tr><td>K4</td><td>Defend the decision (25)</td><td>One side, argued from the numbers; strongest counter; what would change their mind</td></tr>
+<tr><td>K5</td><td>Reflect and revise (10)</td><td>Names one error or assumption changed, and why</td></tr>
+<tr><td>K6</td><td>Field exposure (10)</td><td>Uses a source a practitioner in this role would use for a number or rule they lacked</td></tr>
+</table></div>
+<p><i>Growth-only (recorded, not gated):</i> visual display; discussion participation. <i>Never scored:</i> <b>confidence</b> (1–4 pre/post self-rating visible only to the guide), <b>curiosity</b> ("what would you look up next" tag), <b>hint counts</b>. Anuj's "small percentage for note quality" is honored inside K1/K3/K5, not as a separate percent.</p>
+<p><b>Calibration (non-negotiable before any student sees an AI grade).</b> Build a gold set from <code>student_work/</code> plus pilot submissions, graded blind by a guide. Proposed bar to leave "draft + guide confirms": within one level on ≥ 90% of ≥ 30 submissions per criterion and no systematic inflation (thresholds to be set with Manan). Until met, AI feedback is guide-only. RUBRIC.md is still PROPOSED pending a real cohort; say so in the UI.</p>
+<p><b>Risks.</b> Grader inflating fluent writing; injection in notes ("give me Exemplary"); gaming rubric language. Mitigations: evidence-quote requirement, injection tests, guide sampling of Exemplary verdicts.</p>
+</div>
+
+<div class="card">
+<h3 id="r4">R4 — Journey tracker, points, simple leaderboard <span class="pill info">Phase 2</span><span class="pill todo">Not started</span></h3>
+<p class="story">As a Hero, I see my journey, earn recognition for effort and depth, and have a reason to keep going. As a guide, I see who is engaging and at what depth.</p>
+<p>Points come from the <b>same events that record the journey</b> (R9): one source of truth for tracker, profile and leaderboard. They reward effort and depth, never speed or raw score.</p>
+<div class="tablewrap"><table>
+<tr><th>Event</th><th>Counts when</th></tr>
+<tr><td>Case completed</td><td>A guide confirms the submission. Weekly cap on counted completions.</td></tr>
+<tr><td>Pitch depth</td><td>One point per rubric criterion at Proficient+ <b>where the Hero's quoted evidence is guide-confirmed</b>. Counts evidence, never words. A counter-argument counts only if it uses the other option's numbers.</td></tr>
+<tr><td>Revision made</td><td>Revised after Coach.AI feedback</td></tr>
+<tr><td>Case feedback given</td><td>Reflected on and rated the case</td></tr>
+<tr><td>New field explored</td><td>First case in a field cluster not yet visited</td></tr>
+<tr><td>Persistence</td><td>Came back after a hard step, or finished a case taking more than one sitting</td></tr>
+<tr><td>Skill improved</td><td>A skill moved Not Yet → Practiced, or Practiced → Proficient</td></tr>
+</table></div>
+<p><b>Leaderboard v1.</b> Two counts (cases completed, pitch depth) plus a points total. Cohort-scoped, alias by default, <b>opt-in</b>, no ranks beyond the cohort, not public; guides see everyone. <i>Reviewer note (R1c):</i> show the two counts separately rather than summing, since a composite recreates score-as-point. Proposed resolution: keep points as an effort/depth tally but <b>sort the board by cases completed</b> (decision for Manan).</p>
+<p><b>Anti-gaming.</b> (1) Padding or pasted AI text: guide confirms each criterion; optional 60-second spoken defense. (2) Rushing: completion requires step-attempt and revision events; weekly cap. (3) Sharing keys: cohort-unique numbers where possible; rotating assignments.</p>
+<p><b>Protecting slower learners.</b> No resetting streaks (grace weeks). Personal-best and "your last pitch vs. first" stay private. No public "most improved" board.</p>
+<p><b>Other carrots (by effort):</b> careers card per case (low, now) · pitch of the week (low, now) · bonus twist after submit (low–med, now) · "question that changed the decision" (med, later) · practitioner voice (high; licensing) · learner-authored cases (high risk; later if ever).</p>
+<p><b>Acceptance.</b> Points for any Hero recompute from the event log alone; a guide can hide the board or any Hero; a Hero can leave or switch to an alias at any time.</p>
+</div>
+
+<div class="card">
+<h3 id="r5">R5 — Identity, privacy, consent; profile and history <span class="pill info">Phase 1a</span><span class="pill todo">Not started · gates real children</span></h3>
+<p>Cannot ship the Coach or AI grading to a non-author child on the current model (single shared passcode; student pages unauthenticated on purpose, D-018).</p>
+<ul>
+<li><b>Per-assignment signed links</b> (lowest friction): the assignment link carries a token identifying learner + case; Coach and grader endpoints require it. Revisits D-018 narrowly; full accounts/SSO in Phase 3.</li>
+<li><b>Data minimization:</b> model calls get step text, learner input and an opaque id, never name, school or email. Define retention for hint logs and submissions.</li>
+<li><b>Consent:</b> parental consent path and vendor terms checked for minors' data (US: COPPA/FERPA to confirm with counsel/school; this PRD asserts no compliance).</li>
+<li>Update TECH_STACK.md in the same pass as any change here (00_SESSION.md hard line).</li>
+</ul>
+<h4>Profile and history</h4>
+<p>Five things, none a rank: (1) <b>fields explored</b> ("3 of 12") with the career each touched; (2) <b>cases finished</b>, each with the Hero's choice and one-line reason; (3) a <b>pinned favorite pitch</b> showing criteria met; (4) <b>growth</b>, evidence per pitch over time with the Hero's reflection; (5) <b>"still wondering,"</b> an open question carried into the next assignment.</p>
+<p><b>Recommended next assignment:</b> field curiosity first (Hero picks one of two cases in an adjacent field), then a skill-gap filter from step logs once about five cases of data exist. The guide sees the reason for each suggestion.</p>
+</div>
+
+<div class="card">
+<h3 id="r6">R6 — Telemetry and the feedback loop <span class="pill info">Phase 0 →</span><span class="pill part">Partial</span></h3>
+<ul>
+<li>A visible <b>"This was confusing"</b> control on every step (free text, capped at 500 chars, never sent to a model) writing to the app DB. <span class="pill built">Built</span></li>
+<li>Guide view: per-step stuck heatmap (hint requests, wrong attempts, time) per cohort. Basic log page exists; heatmap not built.</li>
+<li>Close the loop into the pipeline: step-level confusion becomes a Tier 3 case-readiness signal and feeds the Next-cases worklist.</li>
+</ul>
+</div>
+
+<div class="card">
+<h3 id="r7">R7 — Platform seam <span class="pill info">Phase 4</span><span class="pill info">Deferred</span></h3>
+<ul>
+<li>Separate <b>engine</b> (case schema, steps, key, rubric binding, misconception catalog, coach, grader, recognition) from <b>content</b>. Minimum now: keep per-case artifacts (<code>case.json</code>, <code>sensitivity_model.py</code>, <code>misconceptions</code>) the only case-specific inputs to coach and grader.</li>
+<li>Subject path: science next (deterministic keys, same engine), then a subjective subject with a rubric-judged grader and a <b>source-grounding</b> requirement (every claim cites a source the learner can name). "Defensible ambiguity" carries over to history/civics.</li>
+<li>No generic multi-subject abstraction before a second subject exists.</li>
+</ul>
+</div>
+
+<div class="card">
+<h3 id="r8">R8 — The room as a product surface <span class="pill info">Phase 2</span><span class="pill todo">Not started</span></h3>
+<p>Support the live Socratic discussion: guide's pre-discussion stuck summary, vote → twist → re-vote with visible before/after, a cold-call roster tracking who has spoken, and a timer keyed to the facilitator's pacing table. Today discussions are logged after the fact. <b>Acceptance:</b> a guide runs a full session from one screen without notes.</p>
+</div>
+
+<div class="card">
+<h3 id="r9">R9 — Event log foundation <span class="pill info">Phase 0</span><span class="pill part">v1 built</span></h3>
+<p>Every learner action becomes a row: <code>(learner, case, step, event_type, payload, ts)</code>. Without it the coach, analytics, calibration, efficacy and cost tracking each invent their own logging. Today: append-only <code>coach_events</code> (local JSONL; Postgres table created lazily), opaque ids. <b>Missing:</b> attempts, submit, per-field timing. <b>Acceptance:</b> any metric in §13 can be computed from the log alone. Update TECH_STACK.md in the same pass.</p>
+</div>
+
+<div class="card">
+<h3 id="r10">R10 — Author surface <span class="pill info">Phase 4</span><span class="pill info">Deferred</span></h3>
+<p>The platform is also letting a guide author a case through the same gates: a guided builder, cold-read and sensitivity probes run for them, and a publish gate they can't skip. Prototype with Anuj or one Acton guide authoring a single case.</p>
+</div>
+
+<div class="card">
+<h3 id="r11">R11 — Authentic-work design <span class="pill info">Phase 1b</span><span class="pill todo">Not started</span></h3>
+<p>Grade the reasoning trail, not just the final text: step attempts and notes precede the pitch; a "what I got wrong and why" reflection; revision history visible to the guide. <b>Acceptance:</b> a pitch pasted whole from a chatbot, with no matching step attempts, is <b>flagged for the guide, not auto-failed</b>.</p>
+</div>
+
+<div class="card">
+<h3 id="r12">R12 — Readiness on-ramp: warm-up and word-problem scaffold <span class="pill info">Phase 1a</span><span class="pill todo">Not started</span></h3>
+<p class="story">As a Hero, before a case I quickly find out what I'm ready for, get early wins, and get help with the foundations the case needs.</p>
+<ul>
+<li><b>Source of skills:</b> each case lists skills; per step, R1a's taxonomy adds <code>primary_skill</code>. The warm-up is generated from those, not a separate curriculum.</li>
+<li><b>Warm-up:</b> 5–8 items on prerequisite skills, rising difficulty, starting with a win. Result is a skill grid (Not Yet / Practiced / Proficient) shared with the guide and used by Coach.AI. Strong results skip to kickoff.</li>
+<li><b>Targeted drills</b> only for flagged skills. <b>Every answer recomputed in code.</b></li>
+<li><b>Word-problem scaffold:</b> when the gap is translating words into steps, a short lesson teaching the K1 move (name the question, list quantities, set aside what's unneeded, write the steps) on a small everyday problem, then back to the case.</li>
+<li><b>Scope guard:</b> drills for the pilot cases' skills only (<code>phone-plan</code>: slope/intercept, linear systems, percent of a number). Expand only after the pilot shows the warm-up helps (assumption 9).</li>
+</ul>
+<p><b>Acceptance.</b> Finishable in a few minutes; guide sees the grid; skippable; never blocks starting the case twice in a row.</p>
+</div>
+
+<div class="card">
+<h3 id="r13">R13 — Guide-free operations <span class="pill info">Phase 1c</span><span class="pill todo">Not started · primary goal of first deployment</span></h3>
+<p class="story">As a guide at The Humanist Academy, I no longer assign, track, chase or write progress updates; I see only who needs me.</p>
+<ul>
+<li><b>Auto-assign:</b> next case recommended from the journey, assigned automatically, guide override. Build on <code>suggest_cases()</code>; add skill grid and fields explored.</li>
+<li><b>Auto-track and remind:</b> due dates and cadence per Hero; in-app reminders; digest to parent and guide. Build on existing exception kinds (OVERDUE, STALE, AWAITING REVIEW, NO OPEN WORK, NEEDS RESUBMISSION, BADGE ELIGIBLE).</li>
+<li><b>Exception-first guide home:</b> who needs a person today and why: stuck on a concept (with what they tried), hasn't started, awaiting review, badge-eligible.</li>
+<li><b>Confirmation path:</b> AI-drafted scores arrive as a light confirm; sampling replaces per-item confirmation only after measured agreement meets the R3 bar. Badges stay a human decision.</li>
+</ul>
+<p><b>Acceptance.</b> For a pilot cohort, assignment, tracking, reminders and reports happen with no guide action; guide minutes on operations fall and on concept help rise (from the event log); no exception missed in a two-week audit. <b>Open:</b> the Academy's structure, cohort, grades, workflow and tools (S1); written against the existing roster model.</p>
+</div>
+
+<div class="card">
+<h3 id="r14">R14 — Home, next step, rhythm, nudges <span class="pill info">Phase 1c → 2</span><span class="pill todo">Not started</span></h3>
+<ul>
+<li><b>Hero home:</b> one primary action ("Continue Step 3," "Start your warm-up," "Pick your next case"), progress at a glance, minimal navigation. Same for the guide's exception list.</li>
+<li><b>Weekly rhythm:</b> clear weekly expectation, a weekly goal the Hero sets, grace weeks instead of streak resets.</li>
+<li><b>Nudges:</b> in-app only for the Hero (a hard step gets a smaller piece and a check-in, not a lecture); email only to a parent or guide. Consistent with POLICY_PRELIMINARY §3 (the AI never contacts anyone outside the platform).</li>
+</ul>
+<p><b>Acceptance.</b> A first-time Hero finds their next action without help; a guide reaches any exception in two clicks.</p>
+</div>
+
+<!-- 10 ----------------------------------------------------------------->
+<h2 id="examples">10. Worked examples</h2>
+<p class="meta">Illustrative; <code>phone-plan</code> numbers are recomputed in code.</p>
+
+<h3>Example 1 — Coach.AI is a dialogue, not a hint button (Step 2, Carrier V, 3 lines)</h3>
+<p>Correct pre-tax is $95.00; with 8% tax, <b>$102.60</b>. A Coach.AI panel sits beside each step with context pinned. Before checking, the Hero taps "How sure are you?" (3-way, a signal, never graded). Chips: <i>I'm stuck · Check my method · Show me a similar example.</i> The Hero can always keep working without opening the Coach.</p>
+<div class="chat">
+<p><b>Hero</b> enters 118.80 <i>(sure: 3 of 3)</i></p>
+<p><b>Coach.AI</b> — I got something different. Can you tell me how you got 118.80?</p>
+<p><b>Hero</b> — 80 + 15×2, then tax.</p>
+<p><b>Coach.AI</b> — You applied the tax once and used the right rates. Let's look at how many lines you charged the extra rate for. Where does the case say what counts as an extra line?</p>
+<p><b>Hero</b> — "beyond the first 2"… so only 1. 95, then 102.60.</p>
+<p><b>Coach.AI</b> — What did you notice that changed your answer?</p>
+</div>
+<p>Behind the scenes the catalog matched <code>used_total_lines_in_equation</code>. The Coach named the <i>kind</i> of mistake and pointed to a place in the case, never the operation.</p>
+<div class="tablewrap"><table>
+<tr><th>Hero enters</th><th>Matches (computed in code)</th><th>Coach.AI's first move</th></tr>
+<tr><td>110.81</td><td>95 × 1.08 × 1.08</td><td>"Your number is higher than I expected. Where does Appendix B say the tax comes in?"</td></tr>
+<tr><td>95.00</td><td>forgot tax</td><td>"That looks like the plan price. Does the case say the family pays that, or something else?"</td></tr>
+<tr><td>160</td><td>80 × 2</td><td>"Which row of Appendix A describes the first two lines, and what does its label say?"</td></tr>
+<tr><td>135.00</td><td>(80 + 15×3) × 1.08</td><td>"Walk me through how many lines each rate applies to."</td></tr>
+<tr><td>7</td><td>no match → model, Socratic only</td><td>"Walk me through how you got 7. What did you start from?"</td></tr>
+</table></div>
+
+<h3>Example 2 — the end-of-case summary and its feedback</h3>
+<p>A short statement of the Hero's position, the reasoning, and what they'd want to know next. <b>Format is declared per case</b> (<code>pitch_format</code>: written · spoken · either); the graded artifact is always text, so a spoken summary is recorded and transcribed. A short spoken defense of a criterion is the strongest check the Hero owns their reasoning (R11). It is an interaction, not a verdict screen: Coach.AI shows three observations quoted from the Hero's own text, asks one question, and lets the Hero revise once before it goes to the guide. Revision history shows as growth. Feedback is in rubric language, labeled "Provisional until your guide confirms," and never shows a raw score.</p>
+<div class="chat">
+<p><i>Framing the problem — Proficient (draft).</i> "You said the family is really deciding what to pay when Charity's line arrives. That names the real question."</p>
+<p><i>Assumptions — Not Yet (draft, low confidence).</i> "You used the 8% tax but didn't say why you trusted the $15 extra-line price to stay the same. What else would have to be true?"</p>
+<p><i>One question for you:</i> "What's the strongest reason to pick the other carrier, and how would you answer it?"</p>
+</div>
+
+<h3>Example 3 — what the guide sees (invented cohort of six)</h3>
+<div class="tablewrap"><table>
+<tr><th>Step</th><th>Core skill</th><th>First try</th><th>Hint requests</th><th>Signal</th></tr>
+<tr><td>1 Cost equations</td><td>Linear equation: slope, y-intercept</td><td>2 of 6</td><td>6</td><td>⚠ 3 Heroes read $80 as per line</td></tr>
+<tr><td>2 Total with tax</td><td>Percent of a number; order of operations</td><td>5 of 6</td><td>2</td><td>✓ strength</td></tr>
+<tr><td>3 Break-even</td><td>System of linear equations</td><td>3 of 6</td><td>4</td><td>⚠ 2 reported "1 line" instead of 3</td></tr>
+<tr><td>Summary</td><td>Framing; naming assumptions</td><td>4 Proficient</td><td>n/a</td><td>Weak on assumptions</td></tr>
+</table></div>
+<div class="callout"><b>Suggested focus (generated, guide can edit):</b> "Open on Step 1. Cold-call a Hero who entered 160: 'What was your $80 counting?' Then ask what 'x = 1' is counting in Step 3. Strength to name: everyone applied the 8% tax once."</div>
+<p>Operations the guide no longer does (assignment, reminders, digest, "who is behind") ran themselves; the guide's list holds exceptions only ("Wren hasn't started: 6 days"; "Otter asked for help on Step 3 twice"). Heroes' own feedback ("4 of 6 said Appendix A's wording was confusing; 5 of 6 want a case in a field like this") flows into the guide's prep <i>and</i> the case-quality queue (S4).</p>
+
+<h3>Example 4 — the same engine in other subjects (sketches, not cases)</h3>
+<ul>
+<li><b>Science (deterministic key):</b> choosing between interventions where unit and concentration conversions drive the answer. Catalog: <code>mL_vs_L</code>, <code>forgot_dilution_factor</code>, <code>mean_not_median</code>.</li>
+<li><b>History/civics (rubric-judged):</b> a binary decision from a primary-source packet; grader checks every claim cites a packet source, the strongest opposing argument is stated fairly, evidence is separated from inference. Needs a calibrated gold set first.</li>
+<li><b>Book review (rubric-judged):</b> "Would you recommend this to a skeptical friend?" Graded on a quoted passage and a fair statement of the best objection.</li>
+</ul>
+
+<!-- 11 ----------------------------------------------------------------->
+<h2 id="principles">11. Design principles</h2>
+<p>Existing: defensible ambiguity · never fabricate a number or URL · machine drafts, human promotes · published ≠ verified · derive counts, never hand-write them.</p>
+<ol>
+<li><b>Coach.AI asks; it never tells.</b> Hints climb a ladder; the final answer is never emitted.</li>
+<li><b>Diagnose before you generate.</b> Detect common mistakes in code; the model phrases the response and handles the long tail.</li>
+<li><b>The server holds the key.</b> Anything that counts is computed server-side; client checks are formative only.</li>
+<li><b>Recognition rewards effort, depth and persistence,</b> not speed or volume. Raw score is never the ranking.</li>
+<li><b>Humans stay in the loop</b> until measured agreement says otherwise.</li>
+<li><b>Children's data is a design input.</b> Minimal data, no identifiers to model vendors, consent before launch.</li>
+<li><b>One real thing before the general thing.</b> No platform abstraction before a second subject forces its shape.</li>
+<li><b>Automate operations; keep humans for judgment.</b> Assigning, tracking, reminding and reporting are the platform's; concept help, getting started and badge calls are the guide's.</li>
+<li><b>One next step.</b> Every screen tells a Hero and a guide exactly what to do next.</li>
+</ol>
+<p><b>Definition of done</b> for every item: built, <b>tested</b> (automated), and <b>UAT-tested</b> in a live browser as each persona (Hero, guide, parent). Text-based checks alone miss rendering and behavior bugs.</p>
+
+<!-- 12 ----------------------------------------------------------------->
+<h2 id="nfr">12. Non-functional requirements</h2>
+<div class="tablewrap"><table>
+<tr><th>Area</th><th>Requirement</th></tr>
+<tr><td>Honesty</td><td>UI labels AI output as AI; grades are "provisional" until a guide confirms</td></tr>
+<tr><td>Safety</td><td>Leak and injection test suites are release gates for R2/R3</td></tr>
+<tr><td>Cost</td><td>Per-student/per-case limits; monthly cap; model routing per 00_SESSION.md; AI cost per learner-case tracked from pilot one</td></tr>
+<tr><td>Reliability</td><td>Coach/grader failure must never block saving or submitting work</td></tr>
+<tr><td>Accessibility / equity</td><td>Keyboard-operable Coach; readable at MS reading level; works on a shared phone or tablet</td></tr>
+<tr><td>Testing</td><td>The admin app has few automated tests; R2/R3 endpoints ship with tests</td></tr>
+<tr><td>Verification</td><td>No feature is "done" on text checks alone; live browser pass required</td></tr>
+<tr><td>Operating model</td><td>One operator with AI agents; build only what a pilot needs; buy commodity parts (model API, hosting, auth); every phase shippable by one person in weeks</td></tr>
+</table></div>
+
+<!-- 13 ----------------------------------------------------------------->
+<h2 id="success">13. Success metrics</h2>
+<p class="meta">Proposed; baselines don't exist yet.</p>
+<ul>
+<li><b>North star:</b> cases a Hero completes with a defended position and reflection, confirmed by a guide, per active Hero per month.</li>
+<li><b>Vision outcomes:</b> can structure an ambiguous problem (K1); concept transfer (applies a method from case N in case N+k without a hint); breadth of fields explored; self-reported confidence before/after (a signal, not graded).</li>
+<li><b>Independence and scalability:</b> share of steps resolved without a human, per Hero across cases; guide minutes per Hero per week on operations (falling) vs. concept help (rising); drop-off at hard steps.</li>
+<li><b>Help:</b> hint requests per step; % resolved by catalog vs. model tail; % of wrong answers matched to a known misconception.</li>
+<li><b>Learning:</b> first-try-correct rate before vs. after R1 fixes; step-1 first-try and drop-off with vs. without warm-up.</li>
+<li><b>Trust:</b> guide–AI agreement per criterion; guide override rate.</li>
+<li><b>Guardrails:</b> leak failures = 0; injection failures = 0; AI cost per learner-case; leaderboard drives depth, not just volume.</li>
+<li><b>Delight (qualitative):</b> Hero and parent comments from the pilot.</li>
+</ul>
+
+<!-- 14 ----------------------------------------------------------------->
+<h2 id="assumptions">14. Riskiest assumptions and the cheapest test</h2>
+<p class="meta">Nothing here is validated. Evidence so far: one outside user's email and our own pipeline.</p>
+<div class="tablewrap"><table>
+<tr><th>#</th><th>Assumption</th><th>Cheapest test</th><th>Before</th></tr>
+<tr><td>1</td><td>Heroes use Coach.AI to think, not to extract answers</td><td>Pilot; log dialogue and hint levels against final answers</td><td>Coach at scale</td></tr>
+<tr><td>2</td><td>Guides trust AI-drafted feedback enough to confirm fast</td><td>Blind guide-vs-AI grading of existing student work</td><td>AI feedback shown to Heroes</td></tr>
+<tr><td>3</td><td>Points for completion and pitch depth drive effort, not gaming</td><td>Pilot leaderboard; compare depth before/after; review outliers</td><td>Widening the leaderboard</td></tr>
+<tr><td>4</td><td>Heroes' confidence actually rises</td><td>Pre/post self-rating plus guide observation</td><td>Claiming the outcome</td></tr>
+<tr><td>5</td><td>Guides and parents would adopt and pay</td><td>~5 structured conversations</td><td>Pricing, multi-tenant</td></tr>
+<tr><td>6</td><td>The engine generalizes to another subject</td><td>One science case end to end</td><td>Platform abstraction</td></tr>
+<tr><td>7</td><td>Acton-system integration is worth building</td><td>Discovery with Anuj</td><td>Any integration</td></tr>
+<tr><td>8</td><td>A guide's operations can be automated without losing oversight</td><td>One cohort with auto-assign, tracking, reminders; measure guide minutes; count missed exceptions</td><td>Removing the guide from assignment and tracking</td></tr>
+<tr><td>9</td><td>A short case-scoped warm-up helps, not adds friction</td><td>Warm-up vs. none on pilot cases: completion, step-1 first try, drop-off</td><td>Drills for the whole library</td></tr>
+<tr><td>10</td><td>Heroes become more independent over time</td><td>Share of steps resolved without a human, per Hero, over successive cases</td><td>Claiming independence</td></tr>
+</table></div>
+
+<!-- 15 ----------------------------------------------------------------->
+<h2 id="course">15. When we'd change course</h2>
+<p>Decided <i>before</i> the pilot so the data can't be rationalized afterward.</p>
+<ul>
+<li>Coach.AI mostly used to extract answers after two redesigns → it becomes guide-facing only.</li>
+<li>AI–guide agreement stays under the bar → AI stays a guide-side draft tool.</li>
+<li>Leaderboard produces volume without depth after two tuning rounds → drop volume points; keep personal best and profile only.</li>
+<li>No one outside Anuj's circle wants it → stay a personal tool; skip pricing.</li>
+<li>Guide operations minutes don't fall after the automation phase → fix before widening.</li>
+<li>Habit mechanics raise activity but depth falls → strip back to persistence and improvement.</li>
+<li>Cost per learner-case sinks every model → shrink the AI surface.</li>
+<li>A science case needs an engine rewrite → the platform claim is premature; stay math-first.</li>
+</ul>
+
+<!-- 16 ----------------------------------------------------------------->
+<h2 id="risks">16. AI-in-learning risks and non-goals</h2>
+<ul>
+<li><b>Answer extraction and over-reliance:</b> hint ladder, attempt-first, dialogue logging.</li>
+<li><b>Authentic work:</b> any chatbot can write a pitch. Response: grade the reasoning trail (R11) and let the discussion be the check.</li>
+<li><b>Gaming the leaderboard:</b> depth measures that length alone can't meet; guide review of outliers.</li>
+<li><b>Equity and access:</b> works on a shared phone or tablet.</li>
+<li><b>Children's data:</b> POLICY_PRELIMINARY.md; Roadmap S3.</li>
+</ul>
+<p><b>Non-goals (for now).</b> Replacing the guide or the Socratic discussion · a public marketplace, open signups or monetization · rankings on raw score · becoming a daily math-practice app or tutor · rewriting the authoring pipeline (we add a learner-facing layer and feed data back).</p>
+<p><b>Business model:</b> open, decide after pilots (per-studio, per-learner, case packs, free tool + paid coach/grading, open core + hosted, nonprofit/grant). AI is a variable per-learner cost.</p>
+
+<!-- 17 ----------------------------------------------------------------->
+<h2 id="decisions">17. Decisions and open questions</h2>
+<h3>Decided</h3>
+<ol>
+<li>Build a rubric that matches our goals (K1–K6 proposed) — D-023.</li>
+<li>Simple leaderboard, opt-in, cohort-scoped — D-023.</li>
+<li>Recommended assignments that link week to week — D-023.</li>
+<li>First deployment at The Humanist Academy; automate the guide's operations — D-024.</li>
+<li>Pilot is <b>two</b> cases (<code>phone-plan</code>, <code>tide-window</code>); <code>field-watch</code> dropped — D-025.</li>
+<li>Coach.AI v1 and event log v1 built; model path not live until a paid key is configured — D-025 (PROPOSED defaults).</li>
+</ol>
+<h3>Open</h3>
+<ol>
+<li><b>Model vendor, budget and key</b> (blocks live model testing and any real-child use).</li>
+<li><b>Identity and consent path</b> (R5) — blocks Anuj's kids and every later cohort.</li>
+<li><b>Third pilot case:</b> favor live free data, a domain far from consumer finance and maritime.</li>
+<li><b>Port Coach.AI and the event log to <code>tide-window</code></b> and merge its branch onto the post-redesign main.</li>
+<li><b>The Humanist Academy specifics</b> and the Acton integration surface (needs Anuj; S1).</li>
+<li>Which meaning of the feedback's "Pitch &amp; Communication" was intended (both supported).</li>
+<li>Leaderboard sort: points total vs. cases completed.</li>
+<li>Final retention periods and legal review before any non-pilot use (POLICY_PRELIMINARY §9).</li>
+</ol>
+
+<p class="meta" style="margin-top:3rem;border-top:1px solid var(--line);padding-top:1rem">PRD v2.0 · 2026-11-06. Source of truth for requirements. Status in §7 is a snapshot; the live board is ROADMAP.md. If this and VISION.md disagree on <i>why</i>, VISION.md wins; on <i>when</i>, ROADMAP.md wins.</p>
+
+</div>
+</body>
+</html>
